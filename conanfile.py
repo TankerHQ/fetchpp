@@ -65,4 +65,4 @@ class FetchppConan(ConanFile):
 
 
     def package_info(self):
-        self.cpp_info.libs = ["fecthpp"]
+        self.cpp_info.libs = ["fetchpp"]

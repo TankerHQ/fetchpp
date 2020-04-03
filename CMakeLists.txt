@@ -16,9 +16,10 @@ if (WARN_AS_ERROR)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror")
 endif()
 
-add_subdirectory(libs/fetchpp)
-
 if (ENABLE_TESTING)
   enable_testing()
 endif()
+
+add_subdirectory(libs/fetchpp)
+
 

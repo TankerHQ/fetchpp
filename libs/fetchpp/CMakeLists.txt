@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.4)
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
 add_library(fetchpp
-  include/fetchpp/fetchpp.hpp
+  include/fetchpp/fetch.hpp
   include/fetchpp/field_arg.hpp
   include/fetchpp/field.hpp
   include/fetchpp/message.hpp
@@ -32,6 +32,15 @@ target_include_directories(fetchpp
 )
 
 target_link_libraries(fetchpp PUBLIC CONAN_PKG::Boost)
+
+install(DIRECTORY include DESTINATION .)
+
+install(TARGETS fetchpp
+  EXPORT fetchpp
+  RUNTIME DESTINATION bin
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib
+)
 
 
 if(ENABLE_TESTING)
