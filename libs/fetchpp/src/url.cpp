@@ -5,6 +5,39 @@
 
 namespace fetchpp
 {
+namespace
+{
+template <typename T>
+uint16_t service_to_port(std::basic_string<T> const& service)
+{
+  // maybe use asio resoler for that ? what about async ?
+  if (service == "https")
+    return 443;
+  else if (service == "http")
+    return 80;
+  else
+    return 0;
+}
+template <typename T, std::size_t N>
+uint16_t service_to_port(T const (&service)[N])
+{
+  if (std::strcmp(service, "https"))
+    return 443;
+  else if (std::strcmp(service, "http"))
+    return 80;
+  return 0;
+}
+
+template <typename T>
+uint16_t match_port(std::sub_match<T> const& port_match,
+                    std::sub_match<T> const& scheme_match)
+{
+  if (port_match.matched)
+    return std::stoi(port_match.str());
+  return service_to_port(scheme_match.str());
+}
+}
+
 url url::parse(std::string const& purl)
 {
   using namespace std::string_literals;
@@ -15,13 +48,10 @@ url url::parse(std::string const& purl)
   std::smatch match;
   if (!std::regex_match(purl, match, rg))
     throw std::runtime_error("bad url");
-  uint16_t port = std::stoi(
-      match[3].matched ? match[3].str() :
-                         (match[1].compare("https") == 0 ? "443"s : "80"s));
   if (!match[2].matched)
     throw std::runtime_error("no domain!");
 
-  return {match[1], match[2], port, match[4]};
+  return {match[1], match[2], match_port(match[3], match[1]), match[4]};
 }
 
 url::url(std::string scheme,
@@ -74,4 +104,23 @@ void url::set_target(std::string target)
 {
   _target = std::move(target);
 }
+
+namespace http_literals
+{
+url operator""_https(const char* target, std::size_t)
+{
+  auto res = url::parse(target);
+  res.set_scheme("https");
+  res.set_port(service_to_port("https"));
+  return res;
+}
+url operator""_http(const char* target, std::size_t)
+{
+  auto res = url::parse(target);
+  res.set_scheme("http");
+  res.set_port(service_to_port("http"));
+  return res;
+}
+}
+
 }

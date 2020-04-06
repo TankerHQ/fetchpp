@@ -29,4 +29,10 @@ private:
   uint16_t _port;
   std::string _target;
 };
+
+namespace http_literals
+{
+url operator""_https(const char* target, std::size_t);
+url operator""_http(const char* target, std::size_t);
+}
 }
