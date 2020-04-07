@@ -3,7 +3,7 @@ from conans import ConanFile, CMake, tools
 
 class FetchppConan(ConanFile):
     name = "fetchpp"
-    version = "0.0.1"
+    version = "dev"
     license = "Apache 2.0"
     author = "alexandre.bossard@tanker.io"
     description = "the simplest http client"
@@ -28,10 +28,10 @@ class FetchppConan(ConanFile):
 
     def requirements(self):
         self.requires("Boost/1.71.0@tanker/testing")
+        self.requires("jsonformoderncpp/3.4.0@tanker/testing")
 
 
     def build_requirements(self):
-        self.build_requires("jsonformoderncpp/3.4.0@tanker/testing")
         self.build_requires("Catch2/2.10.0@catchorg/stable")
         self.build_requires("fmt/6.0.0")
 
