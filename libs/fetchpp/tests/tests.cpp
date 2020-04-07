@@ -4,6 +4,7 @@
 
 #include <fetchpp/fetch.hpp>
 #include <fetchpp/field.hpp>
+#include <fetchpp/json_body.hpp>
 #include <fetchpp/message.hpp>
 
 #include <boost/asio/ip/tcp.hpp>
@@ -72,4 +73,17 @@ TEST_CASE_METHOD(ioc_fixture, "async post string", "[https][post][async]")
   auto json = nlohmann::json::parse(body.begin(), body.end());
   REQUIRE(json.at("headers").at("X-Corp-Header") == "corp value");
   REQUIRE(json.at("data") == data);
+}
+
+TEST_CASE_METHOD(ioc_fixture, "async post json", "[https][post][json][async]")
+{
+  auto response = fetchpp::async_post<fetchpp::json_body, fetchpp::json_body>(
+                      ioc,
+                      "post"_https,
+                      {{{"a key", "a value"}}},
+                      {{"X-corp-header", "corp value"}},
+                      boost::asio::use_future)
+                      .get();
+  REQUIRE(response.body().at("headers").at("X-Corp-Header") == "corp value");
+  REQUIRE(response.body().at("json") == nlohmann::json({{"a key", "a value"}}));
 }

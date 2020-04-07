@@ -1,6 +1,6 @@
 #include <fetchpp/field_arg.hpp>
 
-#include <iostream>
+#include <ostream>
 
 namespace fetchpp
 {

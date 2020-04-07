@@ -9,6 +9,7 @@ add_library(fetchpp
   include/fetchpp/message.hpp
   include/fetchpp/process_one.hpp
   include/fetchpp/cache_mode.hpp
+  include/fetchpp/json_body.hpp
 
   include/fetchpp/alias/beast.hpp
   include/fetchpp/alias/http.hpp
@@ -20,7 +21,6 @@ add_library(fetchpp
   src/field_arg.cpp
   src/cache_mode.cpp
   src/request.cpp
-
 )
 
 target_include_directories(fetchpp

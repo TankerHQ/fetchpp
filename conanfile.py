@@ -28,10 +28,10 @@ class FetchppConan(ConanFile):
 
     def requirements(self):
         self.requires("Boost/1.71.0@tanker/testing")
+        self.requires("jsonformoderncpp/3.4.0@tanker/testing")
 
 
     def build_requirements(self):
-        self.build_requires("jsonformoderncpp/3.4.0@tanker/testing")
         self.build_requires("Catch2/2.10.0@catchorg/stable")
         self.build_requires("fmt/6.0.0")
 
