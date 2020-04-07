@@ -41,13 +41,13 @@ TEST_CASE_METHOD(ioc_fixture, "async fetch", "[https][fetch][get][async]")
 
 TEST_CASE_METHOD(ioc_fixture, "http async get", "[https][get][async]")
 {
-  auto response =
-      fetchpp::async_get<fetchpp::http::string_body>(
-          ioc,
-          "get"_https,
-          {{fetchpp::field::content_type, "text/html; charset=UTF8"}},
-          boost::asio::use_future)
-          .get();
+  auto response = fetchpp::async_get<fetchpp::http::string_body>(
+                      ioc,
+                      "get"_https,
+                      fetchpp::headers{{fetchpp::field::content_type,
+                                        "text/html; charset=UTF8"}},
+                      boost::asio::use_future)
+                      .get();
   REQUIRE(response.result_int() == 200);
   REQUIRE(response.at(fetchpp::field::content_type) == "application/json");
   auto const& body = response.body();
@@ -64,7 +64,7 @@ TEST_CASE_METHOD(ioc_fixture, "async post string", "[https][post][async]")
                       ioc,
                       "post"_https,
                       std::move(data),
-                      {{"X-corp-header", "corp value"}},
+                      fetchpp::headers{{"X-corp-header", "corp value"}},
                       boost::asio::use_future)
                       .get();
   REQUIRE(response.result_int() == 200);
@@ -81,7 +81,7 @@ TEST_CASE_METHOD(ioc_fixture, "async post json", "[https][post][json][async]")
                       ioc,
                       "post"_https,
                       {{{"a key", "a value"}}},
-                      {{"X-corp-header", "corp value"}},
+                      fetchpp::headers{{"X-corp-header", "corp value"}},
                       boost::asio::use_future)
                       .get();
   REQUIRE(response.body().at("headers").at("X-Corp-Header") == "corp value");

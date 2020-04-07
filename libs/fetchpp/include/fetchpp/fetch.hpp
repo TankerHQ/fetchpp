@@ -141,7 +141,7 @@ template <typename BodyResponse, typename BodyRequest, typename GetHandler>
 auto async_post(net::io_context& ioc,
                 std::string const& url_str,
                 typename BodyRequest::value_type data,
-                std::initializer_list<field_arg> fields,
+                headers fields,
                 GetHandler&& handler)
     -> async_http_result_t<GetHandler, BodyResponse>
 {

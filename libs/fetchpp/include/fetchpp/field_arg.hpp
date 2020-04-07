@@ -21,4 +21,6 @@ struct field_arg
   field_arg(fetchpp::field field, std::string value);
   field_arg(std::string field_name, std::string value);
 };
+
+using headers = std::initializer_list<field_arg>;
 }
