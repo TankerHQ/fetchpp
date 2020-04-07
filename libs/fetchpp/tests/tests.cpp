@@ -22,14 +22,14 @@
 using namespace test::helpers::http_literals;
 using test::helpers::ioc_fixture;
 
-TEST_CASE_METHOD(ioc_fixture, "http async fetch", "[https][fetch][get][async]")
+TEST_CASE_METHOD(ioc_fixture, "async fetch", "[https][fetch][get][async]")
 {
   auto request =
       make_request(fetchpp::http::verb::get, fetchpp::url::parse("get"_https));
   request.content_type("text/html; charset=UTF8");
-  auto response =
-      fetchpp::async_fetch(ioc, std::move(request), boost::asio::use_future)
-          .get();
+  auto response = fetchpp::async_fetch<fetchpp::http::string_body>(
+                      ioc, std::move(request), boost::asio::use_future)
+                      .get();
   REQUIRE(response.result_int() == 200);
   REQUIRE(response.at(fetchpp::field::content_type) == "application/json");
   auto json = nlohmann::json::parse(response.body());
@@ -41,7 +41,7 @@ TEST_CASE_METHOD(ioc_fixture, "http async fetch", "[https][fetch][get][async]")
 TEST_CASE_METHOD(ioc_fixture, "http async get", "[https][get][async]")
 {
   auto response =
-      fetchpp::async_get(
+      fetchpp::async_get<fetchpp::http::string_body>(
           ioc,
           "get"_https,
           {{fetchpp::field::content_type, "text/html; charset=UTF8"}},
@@ -55,14 +55,16 @@ TEST_CASE_METHOD(ioc_fixture, "http async get", "[https][get][async]")
   REQUIRE(json.at("headers").at(ct) == "text/html; charset=UTF8");
 }
 
-TEST_CASE_METHOD(ioc_fixture, "http async post string", "[https][post][async]")
+TEST_CASE_METHOD(ioc_fixture, "async post string", "[https][post][async]")
 {
   auto const data = std::string("this is my data");
-  auto response = fetchpp::async_post(ioc,
-                                      "post"_https,
-                                      std::move(data),
-                                      {{"X-corp-header", "corp value"}},
-                                      boost::asio::use_future)
+  auto response = fetchpp::async_post<fetchpp::http::string_body,
+                                      fetchpp::http::string_body>(
+                      ioc,
+                      "post"_https,
+                      std::move(data),
+                      {{"X-corp-header", "corp value"}},
+                      boost::asio::use_future)
                       .get();
   REQUIRE(response.result_int() == 200);
   REQUIRE(response.at(fetchpp::field::content_type) == "application/json");

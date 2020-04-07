@@ -24,9 +24,7 @@ template <typename CompletionToken, typename BodyResponse>
 using async_http_result_t =
     typename async_http_result<CompletionToken, BodyResponse>::return_type;
 
-template <typename GetHandler,
-          typename Request,
-          typename BodyResponse = http::string_body>
+template <typename BodyResponse, typename Request, typename GetHandler>
 auto async_fetch(net::io_context& ioc, Request request, GetHandler&& handler)
     -> async_http_result_t<GetHandler, BodyResponse>
 {
@@ -125,7 +123,7 @@ auto async_fetch(net::io_context& ioc, Request request, GetHandler&& handler)
   return async_comp.result.get();
 }
 
-template <typename GetHandler, typename BodyResponse = http::string_body>
+template <typename BodyResponse, typename GetHandler>
 auto async_get(net::io_context& ioc,
                std::string const& url_str,
                std::initializer_list<field_arg> fields,
@@ -136,16 +134,13 @@ auto async_get(net::io_context& ioc,
       make_request<http::empty_body>(http::verb::get, url::parse(url_str), {});
   for (auto const& field : fields)
     request.insert(field.field, field.field_name, field.value);
-  return async_fetch(ioc, request, handler);
+  return async_fetch<BodyResponse>(ioc, request, handler);
 }
 
-template <typename GetHandler,
-          typename BodyRequest = http::string_body,
-          typename BodyResponse = http::string_body,
-          typename DataType = typename BodyRequest::value_type>
+template <typename BodyResponse, typename BodyRequest, typename GetHandler>
 auto async_post(net::io_context& ioc,
                 std::string const& url_str,
-                DataType data,
+                typename BodyRequest::value_type data,
                 std::initializer_list<field_arg> fields,
                 GetHandler&& handler)
     -> async_http_result_t<GetHandler, BodyResponse>
@@ -154,6 +149,6 @@ auto async_post(net::io_context& ioc,
       http::verb::post, url::parse(url_str), {}, std::move(data));
   for (auto const& field : fields)
     request.insert(field.field, field.field_name, field.value);
-  return async_fetch(ioc, request, handler);
+  return async_fetch<BodyResponse>(ioc, std::move(request), handler);
 }
 }

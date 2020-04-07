@@ -1,5 +1,7 @@
 #include <fetchpp/field_arg.hpp>
 
+#include <iostream>
+
 namespace fetchpp
 {
 field_arg::field_arg(fetchpp::field field, std::string value)

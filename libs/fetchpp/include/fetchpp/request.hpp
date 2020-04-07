@@ -79,8 +79,7 @@ void request<BodyType>::content_type(beast::string_param const& param)
   this->insert(beast::http::field::content_type, param);
 }
 
-template <typename BodyType = http::string_body,
-          typename Value = typename BodyType::value_type>
+template <typename BodyType, typename Value>
 request<BodyType> make_request(http::verb verb,
                                url uri,
                                options opt,
