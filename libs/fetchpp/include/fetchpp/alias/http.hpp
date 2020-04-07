@@ -2,7 +2,7 @@
 
 #include <fetchpp/alias/beast.hpp>
 
-namespace fetchpp
+namespace fetchpp::http
 {
-namespace http = beast::http;
+using namespace beast::http;
 }

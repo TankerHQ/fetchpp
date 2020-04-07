@@ -11,7 +11,6 @@
 
 #include <boost/beast/core/tcp_stream.hpp>
 #include <boost/beast/http/empty_body.hpp>
-#include <boost/beast/http/string_body.hpp>
 
 namespace fetchpp
 {
@@ -126,7 +125,7 @@ auto async_fetch(net::io_context& ioc, Request request, GetHandler&& handler)
 template <typename BodyResponse, typename GetHandler>
 auto async_get(net::io_context& ioc,
                std::string const& url_str,
-               std::initializer_list<field_arg> fields,
+               headers fields,
                GetHandler&& handler)
     -> async_http_result_t<GetHandler, BodyResponse>
 {

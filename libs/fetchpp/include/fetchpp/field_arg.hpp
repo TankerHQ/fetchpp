@@ -2,6 +2,7 @@
 
 #include <fetchpp/field.hpp>
 
+#include <initializer_list>
 #include <string>
 
 namespace fetchpp

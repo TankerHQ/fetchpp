@@ -77,13 +77,14 @@ TEST_CASE_METHOD(ioc_fixture, "async post string", "[https][post][async]")
 
 TEST_CASE_METHOD(ioc_fixture, "async post json", "[https][post][json][async]")
 {
-  auto response = fetchpp::async_post<fetchpp::json_body, fetchpp::json_body>(
-                      ioc,
-                      "post"_https,
-                      {{{"a key", "a value"}}},
-                      fetchpp::headers{{"X-corp-header", "corp value"}},
-                      boost::asio::use_future)
-                      .get();
+  auto response =
+      fetchpp::async_post<fetchpp::http::json_body, fetchpp::http::json_body>(
+          ioc,
+          "post"_https,
+          {{{"a key", "a value"}}},
+          fetchpp::headers{{"X-corp-header", "corp value"}},
+          boost::asio::use_future)
+          .get();
   REQUIRE(response.body().at("headers").at("X-Corp-Header") == "corp value");
   REQUIRE(response.body().at("json") == nlohmann::json({{"a key", "a value"}}));
 }
