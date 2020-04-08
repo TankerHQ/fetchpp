@@ -1,31 +1,23 @@
 #pragma once
 
 #include <fetchpp/connect.hpp>
-#include <fetchpp/field_arg.hpp>
 #include <fetchpp/process_one.hpp>
 #include <fetchpp/request.hpp>
 
+#include <fetchpp/detail/async_http_result.hpp>
+
+#include <boost/beast/core/tcp_stream.hpp>
+
+#include <fetchpp/alias/beast.hpp>
 #include <fetchpp/alias/error_code.hpp>
 #include <fetchpp/alias/http.hpp>
 #include <fetchpp/alias/net.hpp>
 
-#include <boost/beast/core/tcp_stream.hpp>
-#include <boost/beast/http/empty_body.hpp>
-
 namespace fetchpp
 {
-template <typename CompletionToken, typename Response>
-using async_http_result =
-    typename net::async_result<typename std::decay_t<CompletionToken>,
-                               void(error_code, Response)>;
-
-template <typename CompletionToken, typename Response>
-using async_http_result_t =
-    typename async_http_result<CompletionToken, Response>::return_type;
-
 template <typename Response, typename Request, typename GetHandler>
 auto async_fetch(net::io_context& ioc, Request request, GetHandler&& handler)
-    -> async_http_result_t<GetHandler, Response>
+    -> detail::async_http_result_t<GetHandler, Response>
 {
   using async_completion_t =
       net::async_completion<GetHandler, void(error_code, Response)>;
@@ -125,7 +117,7 @@ auto async_get(net::io_context& ioc,
                std::string const& url_str,
                headers fields,
                GetHandler&& handler)
-    -> async_http_result_t<GetHandler, Response>
+    -> detail::async_http_result_t<GetHandler, Response>
 {
   auto request = make_request(http::verb::get, url::parse(url_str), {});
   for (auto const& field : fields)
@@ -139,7 +131,7 @@ auto async_post(net::io_context& ioc,
                 typename Request::body_type::value_type data,
                 headers fields,
                 GetHandler&& handler)
-    -> async_http_result_t<GetHandler, Response>
+    -> detail::async_http_result_t<GetHandler, Response>
 {
   auto request = make_request<Request>(
       http::verb::post, url::parse(url_str), {}, std::move(data));

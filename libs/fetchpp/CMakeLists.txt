@@ -12,6 +12,7 @@ add_library(fetchpp
   include/fetchpp/json_body.hpp
 
   include/fetchpp/detail/json_body.hpp
+  include/fetchpp/detail/async_http_result.hpp
 
   include/fetchpp/alias/beast.hpp
   include/fetchpp/alias/http.hpp
