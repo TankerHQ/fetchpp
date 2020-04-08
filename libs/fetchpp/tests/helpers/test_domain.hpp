@@ -1,21 +1,15 @@
 #pragma once
 
-#include <fmt/format.h>
-
 #include <string>
+#include <string_view>
 
-namespace test::helpers::http_literals
+namespace test::helpers
 {
-static auto constexpr TEST_URL = "httpbin.org";
+auto get_test_host() -> std::string_view;
 
-inline std::string operator""_http(const char* target, std::size_t)
+namespace http_literals
 {
-  return fmt::format("http://{}/{}", TEST_URL, target);
+std::string operator""_http(const char* target, std::size_t);
+std::string operator""_https(const char* target, std::size_t);
 }
-
-inline std::string operator""_https(const char* target, std::size_t)
-{
-  return fmt::format("https://{}/{}", TEST_URL, target);
-}
-
 }
