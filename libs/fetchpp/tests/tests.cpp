@@ -23,12 +23,24 @@
 using namespace test::helpers::http_literals;
 using test::helpers::ioc_fixture;
 
+template <typename T>
+using Response = fetchpp::http::response<T>;
+
+template <typename T>
+using Request = fetchpp::request<T>;
+
+using StringResponse = Response<fetchpp::http::string_body>;
+using JsonResponse = Response<fetchpp::http::json_body>;
+
+using StringRequest = Request<fetchpp::http::string_body>;
+using JsonRequest = Request<fetchpp::http::json_body>;
+
 TEST_CASE_METHOD(ioc_fixture, "async fetch", "[https][fetch][get][async]")
 {
   auto request =
       make_request(fetchpp::http::verb::get, fetchpp::url::parse("get"_https));
   request.content_type("text/html; charset=UTF8");
-  auto response = fetchpp::async_fetch<fetchpp::http::string_body>(
+  auto response = fetchpp::async_fetch<StringResponse>(
                       ioc, std::move(request), boost::asio::use_future)
                       .get();
   REQUIRE(response.result_int() == 200);
@@ -41,7 +53,7 @@ TEST_CASE_METHOD(ioc_fixture, "async fetch", "[https][fetch][get][async]")
 
 TEST_CASE_METHOD(ioc_fixture, "http async get", "[https][get][async]")
 {
-  auto response = fetchpp::async_get<fetchpp::http::string_body>(
+  auto response = fetchpp::async_get<StringResponse>(
                       ioc,
                       "get"_https,
                       fetchpp::headers{{fetchpp::field::content_type,
@@ -59,8 +71,7 @@ TEST_CASE_METHOD(ioc_fixture, "http async get", "[https][get][async]")
 TEST_CASE_METHOD(ioc_fixture, "async post string", "[https][post][async]")
 {
   auto const data = std::string("this is my data");
-  auto response = fetchpp::async_post<fetchpp::http::string_body,
-                                      fetchpp::http::string_body>(
+  auto response = fetchpp::async_post<StringResponse, StringRequest>(
                       ioc,
                       "post"_https,
                       std::move(data),
@@ -77,14 +88,13 @@ TEST_CASE_METHOD(ioc_fixture, "async post string", "[https][post][async]")
 
 TEST_CASE_METHOD(ioc_fixture, "async post json", "[https][post][json][async]")
 {
-  auto response =
-      fetchpp::async_post<fetchpp::http::json_body, fetchpp::http::json_body>(
-          ioc,
-          "post"_https,
-          {{{"a key", "a value"}}},
-          fetchpp::headers{{"X-corp-header", "corp value"}},
-          boost::asio::use_future)
-          .get();
+  auto response = fetchpp::async_post<JsonResponse, JsonRequest>(
+                      ioc,
+                      "post"_https,
+                      {{{"a key", "a value"}}},
+                      fetchpp::headers{{"X-corp-header", "corp value"}},
+                      boost::asio::use_future)
+                      .get();
   REQUIRE(response.body().at("headers").at("X-Corp-Header") == "corp value");
   REQUIRE(response.body().at("json") == nlohmann::json({{"a key", "a value"}}));
 }

@@ -81,13 +81,14 @@ TEST_CASE_METHOD(ioc_fixture,
   fetchpp::beast::ssl_stream<fetchpp::beast::tcp_stream> stream(ioc, context);
 
   auto data = std::string("my dearest data");
-  auto request = fetchpp::make_request<fetchpp::http::span_body<char>>(
-      fetchpp::http::verb::post,
-      fetchpp::url::parse("/anything"_https),
-      {},
-      boost::beast::span<char>(data));
+  auto request =
+      fetchpp::make_request<fetchpp::request<fetchpp::span_body<char>>>(
+          fetchpp::http::verb::post,
+          fetchpp::url::parse("/anything"_https),
+          {},
+          boost::beast::span<char>(data));
   request.set(fetchpp::field::content_type, "text/plain");
-  fetchpp::response<fetchpp::string_body> response;
+  fetchpp::response<fetchpp::http::string_body> response;
 
   auto results = http_resolve_domain(ioc, std::string{get_test_host()});
   auto fut = fetchpp::async_connect(stream, results, boost::asio::use_future);

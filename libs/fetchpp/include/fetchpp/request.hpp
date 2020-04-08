@@ -9,6 +9,7 @@
 #include <boost/beast/http/message.hpp>
 #include <boost/beast/http/string_body.hpp>
 #include <boost/beast/http/verb.hpp>
+
 #include <fetchpp/alias/http.hpp>
 
 namespace fetchpp
@@ -21,9 +22,9 @@ void set_options(options const& opt,
 }
 
 template <typename BodyType = http::empty_body>
-class request : public http::request<BodyType>
+class request : public beast::http::request<BodyType>
 {
-  using base_t = http::request<BodyType>;
+  using base_t = beast::http::request<BodyType>;
 
 public:
   request(http::verb verb, url uri, options opt);
@@ -38,12 +39,12 @@ private:
   fetchpp::options _opt;
 };
 
-template <typename BodyType = http::string_body,
-          typename Value = typename BodyType::value_type>
-request<BodyType> make_request(http::verb verb,
-                               url uri,
-                               options opt = {},
-                               Value body = {});
+template <typename Request = request<http::string_body>,
+          typename Value = typename Request::body_type::value_type>
+Request make_request(http::verb verb,
+                     url uri,
+                     options opt = {},
+                     Value body = {});
 
 inline auto make_request(http::verb verb, url uri, options opt = {})
 {
@@ -76,16 +77,13 @@ url const& request<BodyType>::uri() const
 template <typename BodyType>
 void request<BodyType>::content_type(beast::string_param const& param)
 {
-  this->insert(beast::http::field::content_type, param);
+  this->insert(http::field::content_type, param);
 }
 
-template <typename BodyType, typename Value>
-request<BodyType> make_request(http::verb verb,
-                               url uri,
-                               options opt,
-                               Value body)
+template <typename Request, typename Value>
+Request make_request(http::verb verb, url uri, options opt, Value body)
 {
-  auto req = request<BodyType>(verb, uri, opt);
+  auto req = Request(verb, uri, opt);
   req.body() = std::move(body);
   req.prepare_payload();
   return req;
