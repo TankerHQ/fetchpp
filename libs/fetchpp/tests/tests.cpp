@@ -5,9 +5,9 @@
 #include <fetchpp/fetch.hpp>
 #include <fetchpp/field.hpp>
 #include <fetchpp/get.hpp>
-#include <fetchpp/post.hpp>
 #include <fetchpp/json_body.hpp>
 #include <fetchpp/message.hpp>
+#include <fetchpp/post.hpp>
 
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/use_future.hpp>
@@ -44,6 +44,32 @@ TEST_CASE_METHOD(ioc_fixture, "async fetch", "[https][fetch][get][async]")
   request.content_type("text/html; charset=UTF8");
   auto response = fetchpp::async_fetch<StringResponse>(
                       ioc, std::move(request), boost::asio::use_future)
+                      .get();
+  REQUIRE(response.result_int() == 200);
+  REQUIRE(response.at(fetchpp::field::content_type) == "application/json");
+  auto json = nlohmann::json::parse(response.body());
+  auto const content_type = json.at("headers").at(
+      std::string{to_string(fetchpp::field::content_type)});
+  REQUIRE(content_type == "text/html; charset=UTF8");
+}
+
+TEST_CASE_METHOD(ioc_fixture,
+                 "async fetch with ssl context",
+                 "[https][fetch][get][async][verify_peer][!mayfail]")
+{
+  auto request =
+      make_request(fetchpp::http::verb::get, fetchpp::url::parse("get"_https));
+  request.content_type("text/html; charset=UTF8");
+
+  using fetchpp::net::ssl::context;
+  auto sslc = context{context::tls_client};
+  // We need this for some broken build of boost ssl backend
+  sslc.add_verify_path("/etc/ssl/certs");
+  sslc.add_verify_path("/etc/ssl/private");
+  sslc.set_verify_mode(context::verify_peer |
+                       context::verify_fail_if_no_peer_cert);
+  auto response = fetchpp::async_fetch<StringResponse>(
+                      ioc, sslc, std::move(request), boost::asio::use_future)
                       .get();
   REQUIRE(response.result_int() == 200);
   REQUIRE(response.at(fetchpp::field::content_type) == "application/json");

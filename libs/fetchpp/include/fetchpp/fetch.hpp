@@ -15,7 +15,51 @@
 namespace fetchpp
 {
 template <typename Response, typename Request, typename GetHandler>
+auto async_fetch(net::io_context& ioc,
+                 net::ssl::context& sslc,
+                 Request request,
+                 GetHandler&& handler)
+    -> detail::async_http_result_t<GetHandler, Response>;
+
+namespace detail
+{
+template <typename Request, typename Response>
+struct fetch_composer
+{
+  net::io_context& ioc;
+  Request request;
+  net::ssl::context sslc = net::ssl::context{net::ssl::context::tls_client};
+
+  template <typename Self>
+  void operator()(Self& self)
+  {
+    async_fetch<Response>(ioc, sslc, std::move(request), std::move(self));
+    return;
+  }
+
+  template <typename Self>
+  void operator()(Self& self, error_code ec, Response&& response)
+  {
+    self.complete(ec, std::move(response));
+  }
+};
+}
+
+template <typename Response, typename Request, typename GetHandler>
 auto async_fetch(net::io_context& ioc, Request request, GetHandler&& handler)
+    -> detail::async_http_result_t<GetHandler, Response>
+{
+  return net::async_compose<GetHandler, void(error_code, Response)>(
+      detail::fetch_composer<Request, Response>{ioc, std::move(request)},
+      handler,
+      ioc);
+}
+
+template <typename Response, typename Request, typename GetHandler>
+auto async_fetch(net::io_context& ioc,
+                 net::ssl::context& sslc,
+                 Request request,
+                 GetHandler&& handler)
     -> detail::async_http_result_t<GetHandler, Response>
 {
   using async_completion_t =
@@ -23,13 +67,9 @@ auto async_fetch(net::io_context& ioc, Request request, GetHandler&& handler)
   using handler_type = typename async_completion_t::completion_handler_type;
   using AsyncStream = beast::ssl_stream<beast::tcp_stream>;
 
-  net::ssl::context sslc(net::ssl::context::tlsv12_client);
-  AsyncStream stream(ioc, sslc);
-
   using base_type =
       beast::stable_async_base<handler_type,
                                typename AsyncStream::executor_type>;
-
   struct op : base_type
   {
     enum status : int
@@ -105,6 +145,7 @@ auto async_fetch(net::io_context& ioc, Request request, GetHandler&& handler)
       async_connect(data.stream, results, std::move(*this));
     }
   };
+  AsyncStream stream(ioc, sslc);
 
   async_completion_t async_comp{handler};
   op(std::move(stream), std::move(request), async_comp.completion_handler);
