@@ -41,9 +41,9 @@ uint16_t match_port(std::sub_match<T> const& port_match,
 url url::parse(std::string const& purl)
 {
   using namespace std::string_literals;
-  // https://regex101.com/r/qrDzR5/6
+  // https://regex101.com/r/QfqRd0/3
   static auto const rg = std::regex(
-      R"((?:^(https?)://)?(?:.*?@)?(.+(?:\..+?)+?)(?::(\d+))?([/?].*?)?$)",
+      R"((?:^(https?)://)?(?:.*?@)?(.+(?:(?:\..+?)+?)|localhost)(?::(\d+))?([/?].*?)?$)",
       std::regex::optimize);
   std::smatch match;
   if (!std::regex_match(purl, match, rg))
