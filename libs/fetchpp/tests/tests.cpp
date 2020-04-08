@@ -4,6 +4,8 @@
 
 #include <fetchpp/fetch.hpp>
 #include <fetchpp/field.hpp>
+#include <fetchpp/get.hpp>
+#include <fetchpp/post.hpp>
 #include <fetchpp/json_body.hpp>
 #include <fetchpp/message.hpp>
 

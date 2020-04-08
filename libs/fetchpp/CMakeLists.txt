@@ -4,6 +4,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
 add_library(fetchpp
   include/fetchpp/fetch.hpp
+  include/fetchpp/get.hpp
+  include/fetchpp/post.hpp
   include/fetchpp/field_arg.hpp
   include/fetchpp/field.hpp
   include/fetchpp/message.hpp

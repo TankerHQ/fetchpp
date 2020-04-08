@@ -2,7 +2,6 @@
 
 #include <fetchpp/connect.hpp>
 #include <fetchpp/process_one.hpp>
-#include <fetchpp/request.hpp>
 
 #include <fetchpp/detail/async_http_result.hpp>
 
@@ -112,31 +111,4 @@ auto async_fetch(net::io_context& ioc, Request request, GetHandler&& handler)
   return async_comp.result.get();
 }
 
-template <typename Response, typename GetHandler>
-auto async_get(net::io_context& ioc,
-               std::string const& url_str,
-               headers fields,
-               GetHandler&& handler)
-    -> detail::async_http_result_t<GetHandler, Response>
-{
-  auto request = make_request(http::verb::get, url::parse(url_str), {});
-  for (auto const& field : fields)
-    request.insert(field.field, field.field_name, field.value);
-  return async_fetch<Response>(ioc, request, handler);
-}
-
-template <typename Response, typename Request, typename GetHandler>
-auto async_post(net::io_context& ioc,
-                std::string const& url_str,
-                typename Request::body_type::value_type data,
-                headers fields,
-                GetHandler&& handler)
-    -> detail::async_http_result_t<GetHandler, Response>
-{
-  auto request = make_request<Request>(
-      http::verb::post, url::parse(url_str), {}, std::move(data));
-  for (auto const& field : fields)
-    request.insert(field.field, field.field_name, field.value);
-  return async_fetch<Response>(ioc, std::move(request), handler);
-}
 }
