@@ -49,7 +49,7 @@ struct connect_composer
   template <typename Self>
   void operator()(Self& self,
                   error_code ec,
-                  tcp::resolver::results_type::endpoint_type endpoint)
+                  tcp::resolver::results_type::endpoint_type)
   {
     if (ec)
     {

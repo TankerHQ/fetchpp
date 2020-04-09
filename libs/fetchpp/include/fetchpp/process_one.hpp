@@ -44,7 +44,7 @@ struct ssl_composer
   } _status = starting;
 
   template <typename Self>
-  void operator()(Self& self, error_code ec = error_code{}, std::size_t n = 0)
+  void operator()(Self& self, error_code ec = error_code{}, std::size_t = 0)
   {
     if (!ec)
     {
