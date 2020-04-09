@@ -67,6 +67,11 @@ auto async_fetch(net::io_context& ioc,
   using handler_type = typename async_completion_t::completion_handler_type;
   using AsyncStream = beast::ssl_stream<beast::tcp_stream>;
 
+  static_assert(Request::is_request::value == true,
+                "Request type is not valid");
+  static_assert(Response::is_request::value == false,
+                "Request type is not valid");
+
   using base_type =
       beast::stable_async_base<handler_type,
                                typename AsyncStream::executor_type>;
