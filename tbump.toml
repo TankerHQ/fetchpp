@@ -5,16 +5,7 @@ regex = '''
   (dev)
   |
   (
-    (?P<major>\d+)
-    \.
-    (?P<minor>\d+)
-    \.
-    (?P<patch>\d+)
-    (
-      -
-      (?P<lifecycle>alpha|beta|r)
-      (?P<release>\d+)
-    )?
+    (\d+)
   )
 '''
 
