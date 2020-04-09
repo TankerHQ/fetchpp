@@ -8,10 +8,11 @@ add_library(fetchpp
   include/fetchpp/post.hpp
   include/fetchpp/field_arg.hpp
   include/fetchpp/field.hpp
-  include/fetchpp/message.hpp
   include/fetchpp/process_one.hpp
   include/fetchpp/cache_mode.hpp
   include/fetchpp/json_body.hpp
+  include/fetchpp/response.hpp
+  include/fetchpp/request.hpp
 
   include/fetchpp/detail/json_body.hpp
   include/fetchpp/detail/async_http_result.hpp

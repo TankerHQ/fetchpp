@@ -6,8 +6,8 @@
 #include <fetchpp/field.hpp>
 #include <fetchpp/get.hpp>
 #include <fetchpp/json_body.hpp>
-#include <fetchpp/message.hpp>
 #include <fetchpp/post.hpp>
+#include <fetchpp/response.hpp>
 
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/use_future.hpp>
@@ -26,8 +26,7 @@ using namespace test::helpers::http_literals;
 using test::helpers::ioc_fixture;
 
 template <typename T>
-using Response = fetchpp::http::response<T>;
-
+using Response = fetchpp::response<T>;
 template <typename T>
 using Request = fetchpp::request<T>;
 
