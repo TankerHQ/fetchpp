@@ -22,7 +22,7 @@ def deploy() -> None:
     ci.cpp.build_recipes(
         Path.getcwd(),
         conan_reference=f"fetchpp/{version}@tanker/stable",
-        upload=False
+        upload=True
     )
 
 
