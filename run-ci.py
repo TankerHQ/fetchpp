@@ -19,7 +19,7 @@ def deploy() -> None:
     git_tag = os.environ["CI_COMMIT_TAG"] 
     version = ci.version_from_git_tag(git_tag)
     ci.bump_files(version)
-    ci.cpp.build_recipes(
+    ci.cpp.build_recipe(
         Path.getcwd(),
         conan_reference=f"fetchpp/{version}@tanker/stable",
         upload=True
