@@ -38,6 +38,7 @@ struct connect_composer
         beast::get_lowest_layer(this->stream)
             .async_connect(this->results, std::move(self));
         return;
+      case connecting:
       case handshaking:
         break;
       }

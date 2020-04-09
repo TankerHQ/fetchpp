@@ -1,5 +1,7 @@
 #pragma once
 
+#include <fetchpp/request.hpp>
+
 #include <boost/beast/http/message.hpp>
 
 #include <boost/beast/http/empty_body.hpp>

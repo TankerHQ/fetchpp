@@ -1,47 +1,80 @@
 #pragma once
 
 #include <fetchpp/connect.hpp>
-#include <fetchpp/field_arg.hpp>
 #include <fetchpp/process_one.hpp>
-#include <fetchpp/request.hpp>
 
+#include <fetchpp/detail/async_http_result.hpp>
+
+#include <boost/beast/core/tcp_stream.hpp>
+
+#include <fetchpp/alias/beast.hpp>
 #include <fetchpp/alias/error_code.hpp>
 #include <fetchpp/alias/http.hpp>
 #include <fetchpp/alias/net.hpp>
 
-#include <boost/beast/core/tcp_stream.hpp>
-#include <boost/beast/http/empty_body.hpp>
-#include <boost/beast/http/string_body.hpp>
-
 namespace fetchpp
 {
-template <typename CompletionToken, typename BodyResponse>
-using async_http_result =
-    typename net::async_result<typename std::decay_t<CompletionToken>,
-                               void(error_code, http::response<BodyResponse>)>;
+template <typename Response, typename Request, typename GetHandler>
+auto async_fetch(net::io_context& ioc,
+                 net::ssl::context& sslc,
+                 Request request,
+                 GetHandler&& handler)
+    -> detail::async_http_result_t<GetHandler, Response>;
 
-template <typename CompletionToken, typename BodyResponse>
-using async_http_result_t =
-    typename async_http_result<CompletionToken, BodyResponse>::return_type;
-
-template <typename BodyResponse, typename Request, typename GetHandler>
-auto async_fetch(net::io_context& ioc, Request request, GetHandler&& handler)
-    -> async_http_result_t<GetHandler, BodyResponse>
+namespace detail
 {
-  using Response = http::response<BodyResponse>;
+template <typename Request, typename Response>
+struct fetch_composer
+{
+  net::io_context& ioc;
+  Request request;
+  net::ssl::context sslc = net::ssl::context{net::ssl::context::tls_client};
+
+  template <typename Self>
+  void operator()(Self& self)
+  {
+    async_fetch<Response>(ioc, sslc, std::move(request), std::move(self));
+    return;
+  }
+
+  template <typename Self>
+  void operator()(Self& self, error_code ec, Response&& response)
+  {
+    self.complete(ec, std::move(response));
+  }
+};
+}
+
+template <typename Response, typename Request, typename GetHandler>
+auto async_fetch(net::io_context& ioc, Request request, GetHandler&& handler)
+    -> detail::async_http_result_t<GetHandler, Response>
+{
+  return net::async_compose<GetHandler, void(error_code, Response)>(
+      detail::fetch_composer<Request, Response>{ioc, std::move(request)},
+      handler,
+      ioc);
+}
+
+template <typename Response, typename Request, typename GetHandler>
+auto async_fetch(net::io_context& ioc,
+                 net::ssl::context& sslc,
+                 Request request,
+                 GetHandler&& handler)
+    -> detail::async_http_result_t<GetHandler, Response>
+{
   using async_completion_t =
-      net::async_completion<GetHandler,
-                            void(error_code, http::response<BodyResponse>)>;
+      net::async_completion<GetHandler, void(error_code, Response)>;
   using handler_type = typename async_completion_t::completion_handler_type;
   using AsyncStream = beast::ssl_stream<beast::tcp_stream>;
 
-  net::ssl::context sslc(net::ssl::context::tlsv12_client);
-  AsyncStream stream(ioc, sslc);
+  static_assert(Request::is_request::value == true,
+                "Request type is not valid");
+  static_assert(Response::is_request::value == false,
+                "Request type is not valid");
 
   using base_type =
       beast::stable_async_base<handler_type,
                                typename AsyncStream::executor_type>;
-
   struct op : base_type
   {
     enum status : int
@@ -117,38 +150,11 @@ auto async_fetch(net::io_context& ioc, Request request, GetHandler&& handler)
       async_connect(data.stream, results, std::move(*this));
     }
   };
+  AsyncStream stream(ioc, sslc);
 
   async_completion_t async_comp{handler};
   op(std::move(stream), std::move(request), async_comp.completion_handler);
   return async_comp.result.get();
 }
 
-template <typename BodyResponse, typename GetHandler>
-auto async_get(net::io_context& ioc,
-               std::string const& url_str,
-               std::initializer_list<field_arg> fields,
-               GetHandler&& handler)
-    -> async_http_result_t<GetHandler, BodyResponse>
-{
-  auto request =
-      make_request<http::empty_body>(http::verb::get, url::parse(url_str), {});
-  for (auto const& field : fields)
-    request.insert(field.field, field.field_name, field.value);
-  return async_fetch<BodyResponse>(ioc, request, handler);
-}
-
-template <typename BodyResponse, typename BodyRequest, typename GetHandler>
-auto async_post(net::io_context& ioc,
-                std::string const& url_str,
-                typename BodyRequest::value_type data,
-                headers fields,
-                GetHandler&& handler)
-    -> async_http_result_t<GetHandler, BodyResponse>
-{
-  auto request = make_request<BodyRequest>(
-      http::verb::post, url::parse(url_str), {}, std::move(data));
-  for (auto const& field : fields)
-    request.insert(field.field, field.field_name, field.value);
-  return async_fetch<BodyResponse>(ioc, std::move(request), handler);
-}
 }

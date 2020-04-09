@@ -41,7 +41,7 @@ TEST_CASE_METHOD(ioc_fixture,
       fetchpp::options{});
   fetchpp::response<fetchpp::string_body> response;
 
-  http_ssl_connect(ioc, stream, TEST_URL);
+  http_ssl_connect(ioc, stream, get_test_host().data());
 
   auto fut = fetchpp::async_process_one(
       stream, request, response, boost::asio::use_future);
@@ -58,11 +58,11 @@ TEST_CASE_METHOD(ioc_fixture, "connect", "[https][connect][async]")
   auto request = make_request(fetchpp::http::verb::get,
                               fetchpp::url::parse("/get"_https),
                               fetchpp::options{});
-  request.set(fetchpp::field::host, TEST_URL);
+  request.set(fetchpp::field::host, std::string{get_test_host()});
   request.set(fetchpp::field::user_agent, fetchpp::USER_AGENT);
   fetchpp::response<fetchpp::string_body> response;
 
-  auto results = http_resolve_domain(ioc, TEST_URL);
+  auto results = http_resolve_domain(ioc, std::string{get_test_host()});
   auto fut = fetchpp::async_connect(stream, results, boost::asio::use_future);
   fut.get();
 
@@ -81,15 +81,16 @@ TEST_CASE_METHOD(ioc_fixture,
   fetchpp::beast::ssl_stream<fetchpp::beast::tcp_stream> stream(ioc, context);
 
   auto data = std::string("my dearest data");
-  auto request = fetchpp::make_request<fetchpp::http::span_body<char>>(
-      fetchpp::http::verb::post,
-      fetchpp::url::parse("/anything"_https),
-      {},
-      boost::beast::span<char>(data));
+  auto request =
+      fetchpp::make_request<fetchpp::request<fetchpp::span_body<char>>>(
+          fetchpp::http::verb::post,
+          fetchpp::url::parse("/anything"_https),
+          {},
+          boost::beast::span<char>(data));
   request.set(fetchpp::field::content_type, "text/plain");
-  fetchpp::response<fetchpp::string_body> response;
+  fetchpp::response<fetchpp::http::string_body> response;
 
-  auto results = http_resolve_domain(ioc, TEST_URL);
+  auto results = http_resolve_domain(ioc, std::string{get_test_host()});
   auto fut = fetchpp::async_connect(stream, results, boost::asio::use_future);
   fut.get();
 

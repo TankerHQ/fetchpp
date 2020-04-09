@@ -4,6 +4,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
 add_library(fetchpp
   include/fetchpp/fetch.hpp
+  include/fetchpp/get.hpp
+  include/fetchpp/post.hpp
   include/fetchpp/field_arg.hpp
   include/fetchpp/field.hpp
   include/fetchpp/message.hpp
@@ -11,11 +13,16 @@ add_library(fetchpp
   include/fetchpp/cache_mode.hpp
   include/fetchpp/json_body.hpp
 
+  include/fetchpp/detail/json_body.hpp
+  include/fetchpp/detail/async_http_result.hpp
+
   include/fetchpp/alias/beast.hpp
   include/fetchpp/alias/http.hpp
   include/fetchpp/alias/net.hpp
 
   include/fetchpp/url.hpp
+
+  src/detail/json_body.cpp
 
   src/url.cpp
   src/field_arg.cpp
@@ -31,7 +38,7 @@ target_include_directories(fetchpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
-target_link_libraries(fetchpp PUBLIC CONAN_PKG::Boost)
+target_link_libraries(fetchpp PUBLIC CONAN_PKG::Boost CONAN_PKG::jsonformoderncpp)
 
 install(DIRECTORY include DESTINATION .)
 

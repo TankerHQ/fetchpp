@@ -20,4 +20,4 @@ auto formatter<boost::beast::multi_buffer>::format(
 }
 
 template struct formatter<boost::beast::multi_buffer>;
-};
+}
