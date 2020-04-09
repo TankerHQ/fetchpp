@@ -48,14 +48,16 @@ Request make_request(http::verb verb,
 
 inline auto make_request(http::verb verb, url uri, options opt = {})
 {
-  return request<http::empty_body>(verb, uri, opt);
+  return request<http::empty_body>(verb, uri, std::move(opt));
 }
 
 // =================
 
 template <typename BodyType>
 request<BodyType>::request(http::verb verb, url uri, fetchpp::options opt)
-  : base_t(verb, uri.target(), opt.version),
+  : base_t(verb,
+           uri.target(),
+           static_cast<std::underlying_type_t<http_version>>(opt.version)),
     _uri(std::move(uri)),
     _opt(std::move(opt))
 {
