@@ -29,6 +29,7 @@ add_library(fetchpp
   src/field_arg.cpp
   src/cache_mode.cpp
   src/request.cpp
+  src/content_type.cpp
 )
 
 target_include_directories(fetchpp

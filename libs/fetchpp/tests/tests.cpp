@@ -2,6 +2,7 @@
 
 #include <boost/beast/core/buffers_to_string.hpp>
 
+#include <fetchpp/content_type.hpp>
 #include <fetchpp/fetch.hpp>
 #include <fetchpp/field.hpp>
 #include <fetchpp/get.hpp>
