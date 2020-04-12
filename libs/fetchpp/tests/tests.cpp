@@ -2,6 +2,7 @@
 
 #include <boost/beast/core/buffers_to_string.hpp>
 
+#include <fetchpp/authorization.hpp>
 #include <fetchpp/content_type.hpp>
 #include <fetchpp/fetch.hpp>
 #include <fetchpp/field.hpp>
@@ -51,6 +52,36 @@ TEST_CASE_METHOD(ioc_fixture, "async fetch", "[https][fetch][get][async]")
   auto const content_type = json.at("headers").at(
       std::string{to_string(fetchpp::field::content_type)});
   REQUIRE(content_type == "text/html; charset=UTF8");
+}
+
+TEST_CASE_METHOD(ioc_fixture,
+                 "async fetch basic auth",
+                 "[https][fetch][basic_auth][authorization]")
+{
+  auto request =
+      make_request(fetchpp::http::verb::get,
+                   fetchpp::url::parse("basic-auth/david/totopaf"_https));
+  request.set(fetchpp::http::authorization::basic("david", "totopaf"));
+  auto response = fetchpp::async_fetch<StringResponse>(
+                      ioc, std::move(request), boost::asio::use_future)
+                      .get();
+
+  REQUIRE(response.result_int() == 200);
+}
+
+TEST_CASE_METHOD(ioc_fixture,
+                 "async fetch bearer auth",
+                 "[https][fetch][bearer_auth][authorization]")
+{
+  auto request = make_request(fetchpp::http::verb::get,
+                              fetchpp::url::parse("bearer"_https));
+  request.set(
+      fetchpp::http::authorization::bearer("this_is_a_bearer_token_probably"));
+  auto response = fetchpp::async_fetch<StringResponse>(
+                      ioc, std::move(request), boost::asio::use_future)
+                      .get();
+
+  REQUIRE(response.result_int() == 200);
 }
 
 TEST_CASE_METHOD(ioc_fixture,

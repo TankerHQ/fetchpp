@@ -1,5 +1,6 @@
 #pragma once
 
+#include <fetchpp/authorization.hpp>
 #include <fetchpp/options.hpp>
 #include <fetchpp/url.hpp>
 #include <fetchpp/version.hpp>
@@ -33,6 +34,9 @@ public:
   url const& uri() const;
   boost::string_view content_type() const;
   void content_type(beast::string_param const& param);
+
+  using base_t::set;
+  void set(http::authorization::methods const& m);
 
 private:
   url _uri;
@@ -80,6 +84,12 @@ template <typename BodyType>
 void request<BodyType>::content_type(beast::string_param const& param)
 {
   this->insert(http::field::content_type, param);
+}
+
+template <typename BodyType>
+void request<BodyType>::set(http::authorization::methods const& m)
+{
+  this->set(fetchpp::http::field::authorization, m);
 }
 
 template <typename Request, typename Value>
