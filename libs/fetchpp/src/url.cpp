@@ -7,8 +7,7 @@ namespace fetchpp
 {
 namespace
 {
-template <typename T>
-uint16_t service_to_port(std::basic_string<T> const& service)
+constexpr uint16_t service_to_port(std::string_view service)
 {
   // maybe use asio resoler for that ? what about async ?
   if (service == "https")
@@ -18,16 +17,6 @@ uint16_t service_to_port(std::basic_string<T> const& service)
   else
     return 0;
 }
-template <typename T, std::size_t N>
-uint16_t service_to_port(T const (&service)[N])
-{
-  if (std::strcmp(service, "https"))
-    return 443;
-  else if (std::strcmp(service, "http"))
-    return 80;
-  return 0;
-}
-
 template <typename T>
 uint16_t match_port(std::sub_match<T> const& port_match,
                     std::sub_match<T> const& scheme_match)
@@ -73,6 +62,13 @@ std::string const& url::scheme() const
 std::string const& url::domain() const
 {
   return _domain;
+}
+
+std::string url::host() const
+{
+  if (port() != 80 && port() != 443)
+    return domain() + ":" + std::to_string(port());
+  return domain();
 }
 
 uint16_t url::port() const

@@ -1,4 +1,6 @@
 #include <fetchpp/content_type.hpp>
+#include <fetchpp/request.hpp>
+#include <fetchpp/url.hpp>
 
 #include <iostream>
 #include <sstream>
@@ -57,4 +59,20 @@ TEST_CASE("parsing content_type", "[content_type]")
              !(Equals("application/json", "ascii", "--paf--")));
   CHECK_THAT("application/json;          charset=ascii; boundary=--paf--",
              (Equals("application/json", "ascii", "--paf--")));
+}
+
+TEST_CASE("request set host and port", "[custom_port]")
+{
+  using namespace fetchpp::http;
+  {
+    auto url = fetchpp::url::parse("http://domain.com:2121/target");
+    auto request = make_request(verb::get, url);
+    REQUIRE(request[field::host] == "domain.com:2121");
+  }
+  {
+    auto url = fetchpp::url::parse("http://domain.com/target");
+    url.port(4242);
+    auto request = make_request(verb::get, url);
+    REQUIRE(request[field::host] == "domain.com:4242");
+  }
 }

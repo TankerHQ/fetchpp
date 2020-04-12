@@ -17,7 +17,7 @@ namespace fetchpp
 namespace detail
 {
 void set_options(options const& opt,
-                 std::string const& domain,
+                 std::string const& host,
                  http::fields& fields);
 }
 
@@ -61,7 +61,7 @@ request<BodyType>::request(http::verb verb, url uri, fetchpp::options opt)
     _uri(std::move(uri)),
     _opt(std::move(opt))
 {
-  detail::set_options(_opt, _uri.domain(), *this);
+  detail::set_options(_opt, _uri.host(), *this);
 }
 
 template <typename BodyType>
