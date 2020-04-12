@@ -19,18 +19,4 @@ std::string to_string(cache_mode cm)
   }
   return "ERROR";
 }
-
-std::string to_string(connection con)
-{
-  switch (con)
-  {
-  case connection::keep_alive:
-    return "keep-alive";
-  case connection::close:
-    return "close";
-  case connection::upgrade:
-    return "upgrade";
-  }
-  return "ERROR";
-}
 }

@@ -155,6 +155,7 @@ auto async_fetch(net::io_context& ioc,
   AsyncStream stream(ioc, sslc);
 
   async_completion_t async_comp{handler};
+  request.keep_alive(false);
   op(std::move(stream), std::move(request), async_comp.completion_handler);
   return async_comp.result.get();
 }
