@@ -15,7 +15,6 @@
 #include <boost/asio/use_future.hpp>
 
 #include <boost/beast/core/tcp_stream.hpp>
-#include <boost/beast/ssl/ssl_stream.hpp>
 
 #include "helpers/format.hpp"
 #include "helpers/ioc_fixture.hpp"
@@ -97,8 +96,7 @@ TEST_CASE_METHOD(ioc_fixture,
   // We need this for some broken build of boost ssl backend
   sslc.add_verify_path("/etc/ssl/certs");
   sslc.add_verify_path("/etc/ssl/private");
-  sslc.set_verify_mode(context::verify_peer |
-                       context::verify_fail_if_no_peer_cert);
+  sslc.set_verify_mode(context::verify_peer);
   auto response = fetchpp::async_fetch<StringResponse>(
                       ioc, sslc, std::move(request), boost::asio::use_future)
                       .get();
