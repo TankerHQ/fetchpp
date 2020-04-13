@@ -18,10 +18,10 @@ public:
   uint16_t port() const;
   std::string const& target() const;
 
-  void set_scheme(std::string);
-  void set_domain(std::string);
-  void set_port(uint16_t);
-  void set_target(std::string);
+  void scheme(std::string_view);
+  void domain(std::string_view);
+  void port(uint16_t);
+  void target(std::string_view);
 
 private:
   std::string _scheme;

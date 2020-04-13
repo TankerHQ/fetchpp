@@ -85,24 +85,24 @@ std::string const& url::target() const
   return _target;
 }
 
-void url::set_scheme(std::string scheme)
+void url::scheme(std::string_view scheme)
 {
-  _scheme = std::move(scheme);
+  _scheme = scheme;
 }
 
-void url::set_domain(std::string domain)
+void url::domain(std::string_view domain)
 {
-  _domain = std::move(domain);
+  _domain = domain;
 }
 
-void url::set_port(uint16_t p)
+void url::port(uint16_t p)
 {
   _port = p;
 }
 
-void url::set_target(std::string target)
+void url::target(std::string_view target)
 {
-  _target = std::move(target);
+  _target = target;
 }
 
 namespace http_literals
@@ -110,15 +110,15 @@ namespace http_literals
 url operator""_https(const char* target, std::size_t)
 {
   auto res = url::parse(target);
-  res.set_scheme("https");
-  res.set_port(service_to_port("https"));
+  res.scheme("https");
+  res.port(service_to_port("https"));
   return res;
 }
 url operator""_http(const char* target, std::size_t)
 {
   auto res = url::parse(target);
-  res.set_scheme("http");
-  res.set_port(service_to_port("http"));
+  res.scheme("http");
+  res.port(service_to_port("http"));
   return res;
 }
 }
