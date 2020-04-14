@@ -80,10 +80,9 @@ public:
   using const_buffers_type = net::const_buffer;
 
   template <bool isRequest, typename Fields>
-  json_writer(http::header<isRequest, Fields>& h, json_wrapper& b) : body_(b)
+  json_writer(http::header<isRequest, Fields> const&, json_wrapper const& b)
+    : body_(b)
   {
-    if (h.find(http::field::content_type) == h.end())
-      h.set(http::field::content_type, "application/json");
   }
 
   void init(error_code& ec);
@@ -92,6 +91,6 @@ public:
       -> boost::optional<std::pair<const_buffers_type, bool>>;
 
 private:
-  json_wrapper& body_;
+  json_wrapper const& body_;
 };
 }
