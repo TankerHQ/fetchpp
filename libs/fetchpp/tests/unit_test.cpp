@@ -1,4 +1,5 @@
 #include <fetchpp/content_type.hpp>
+#include <fetchpp/json_body.hpp>
 #include <fetchpp/request.hpp>
 #include <fetchpp/url.hpp>
 
@@ -75,4 +76,12 @@ TEST_CASE("request set host and port", "[custom_port]")
     auto request = make_request(verb::get, url);
     REQUIRE(request[field::host] == "domain.com:4242");
   }
+}
+
+TEST_CASE("request content_type", "[request]")
+{
+  auto const req =
+      fetchpp::make_request<fetchpp::request<fetchpp::http::json_body>>(
+          fetchpp::http::verb::get, fetchpp::url::parse("http://toto.com"), {});
+  REQUIRE(req[fetchpp::http::field::content_type] == "application/json");
 }

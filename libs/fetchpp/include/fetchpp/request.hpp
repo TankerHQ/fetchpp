@@ -13,6 +13,8 @@
 
 #include <fetchpp/alias/http.hpp>
 
+#include <optional>
+
 namespace fetchpp
 {
 namespace detail
@@ -42,6 +44,12 @@ private:
   url _uri;
   fetchpp::options _opt;
 };
+
+template <typename Body>
+std::optional<std::string_view> select_content_type(Body const&)
+{
+  return std::nullopt;
+}
 
 template <typename Request = request<http::string_body>,
           typename Value = typename Request::body_type::value_type>
@@ -97,6 +105,8 @@ Request make_request(http::verb verb, url uri, options opt, Value body)
 {
   auto req = Request(verb, uri, opt);
   req.body() = std::move(body);
+  if (auto ct = select_content_type(req.body()); ct.has_value())
+    req.content_type(*ct);
   req.prepare_payload();
   return req;
 }

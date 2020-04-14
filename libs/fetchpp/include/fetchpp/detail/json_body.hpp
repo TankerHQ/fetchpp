@@ -40,6 +40,12 @@ private:
   mutable std::optional<std::string> dump_;
 };
 
+inline constexpr std::optional<std::string_view> select_content_type(
+    json_wrapper const&)
+{
+  return "application/json";
+}
+
 class json_reader
 {
 public:
