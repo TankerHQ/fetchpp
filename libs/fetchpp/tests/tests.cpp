@@ -152,6 +152,7 @@ TEST_CASE_METHOD(ioc_fixture, "async post json", "[https][post][json][async]")
                       fetchpp::headers{{"X-corp-header", "corp value"}},
                       boost::asio::use_future)
                       .get();
-  REQUIRE(response.body().at("headers").at("X-Corp-Header") == "corp value");
-  REQUIRE(response.body().at("json") == nlohmann::json({{"a key", "a value"}}));
+  REQUIRE(response.result_int() == 200);
+  CHECK(response.body().at("headers").at("X-Corp-Header") == "corp value");
+  CHECK(response.body().at("json") == nlohmann::json({{"a key", "a value"}}));
 }

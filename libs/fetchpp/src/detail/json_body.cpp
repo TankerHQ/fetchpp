@@ -44,7 +44,8 @@ void json_reader::init(boost::optional<std::uint64_t> const& content_length,
 void json_reader::finish(error_code& ec)
 try
 {
-  body_ = json_wrapper::parse(payload_);
+  if (!payload_.empty())
+    body_ = json_wrapper::parse(payload_);
 }
 catch (json_wrapper::parse_error const&)
 {
