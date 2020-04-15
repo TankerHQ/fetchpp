@@ -84,4 +84,5 @@ TEST_CASE("request content_type", "[request]")
       fetchpp::make_request<fetchpp::request<fetchpp::http::json_body>>(
           fetchpp::http::verb::get, fetchpp::url::parse("http://toto.com"), {});
   REQUIRE(req[fetchpp::http::field::content_type] == "application/json");
+  REQUIRE(req.has_content_length());
 }

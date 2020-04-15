@@ -104,9 +104,9 @@ template <typename Request, typename Value>
 Request make_request(http::verb verb, url uri, options opt, Value body)
 {
   auto req = Request(verb, uri, opt);
-  req.body() = std::move(body);
   if (auto ct = select_content_type(req.body()); ct.has_value())
     req.content_type(*ct);
+  req.body() = std::move(body);
   req.prepare_payload();
   return req;
 }

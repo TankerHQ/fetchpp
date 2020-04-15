@@ -1,6 +1,12 @@
 #include <fetchpp/json_body.hpp>
 
-namespace fetchpp::http::detail
+namespace fetchpp::http
+{
+std::uint64_t json_body::size(json_body::value_type const& v)
+{
+  return v.get_dump().length();
+}
+namespace detail
 {
 // json_wrapper
 
@@ -67,4 +73,5 @@ auto json_writer::get(error_code& ec)
   return {{net::buffer(body_.get_dump()), false}};
 }
 
+}
 }
