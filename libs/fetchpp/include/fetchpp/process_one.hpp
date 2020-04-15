@@ -79,6 +79,8 @@ auto async_process_one(AsyncStream& stream,
                                void(error_code)>::return_type
 
 {
+  static_assert(beast::is_async_stream<AsyncStream>::value,
+                "AsyncStream type requirements not met");
   auto state = std::make_unique<detail::state<AsyncStream, Request, Response>>(
       stream, request, response);
   return net::async_compose<CompletionToken, void(error_code)>(

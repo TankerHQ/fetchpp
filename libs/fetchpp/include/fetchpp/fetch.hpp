@@ -6,6 +6,7 @@
 #include <fetchpp/detail/async_http_result.hpp>
 
 #include <boost/beast/core/tcp_stream.hpp>
+#include <boost/beast/ssl/ssl_stream.hpp>
 
 #include <fetchpp/alias/beast.hpp>
 #include <fetchpp/alias/error_code.hpp>
@@ -122,7 +123,8 @@ auto async_fetch(net::io_context& ioc,
         case starting:
           state = status::resolving;
           data.resolver.async_resolve(data.req.uri().domain(),
-                                      data.req.uri().scheme(),
+                                      std::to_string(data.req.uri().port()),
+                                      net::ip::resolver_base::numeric_service,
                                       std::move(*this));
           return;
         case connecting:
@@ -153,6 +155,7 @@ auto async_fetch(net::io_context& ioc,
   AsyncStream stream(ioc, sslc);
 
   async_completion_t async_comp{handler};
+  request.keep_alive(false);
   op(std::move(stream), std::move(request), async_comp.completion_handler);
   return async_comp.result.get();
 }

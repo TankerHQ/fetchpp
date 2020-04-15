@@ -2,6 +2,9 @@
 
 #include <fetchpp/detail/json_body.hpp>
 
+#include <optional>
+#include <string_view>
+
 namespace fetchpp::http
 {
 struct json_body

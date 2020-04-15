@@ -16,12 +16,4 @@ enum class cache_mode : int
 };
 std::string to_string(cache_mode);
 
-enum class connection : int
-{
-  keep_alive,
-  close,
-  upgrade,
-};
-
-std::string to_string(connection);
 }

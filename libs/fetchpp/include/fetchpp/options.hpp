@@ -39,15 +39,8 @@ public:
     return *this;
   }
 
-  options& set(connection c)
-  {
-    this->persistence = c;
-    return *this;
-  }
-
   http_version version = http_version::v11;
   cache_mode cache = cache_mode::no_store;
   redirect_handling redirect = redirect_handling::manual;
-  connection persistence = connection::close;
 };
 }

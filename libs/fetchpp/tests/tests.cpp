@@ -2,18 +2,19 @@
 
 #include <boost/beast/core/buffers_to_string.hpp>
 
+#include <fetchpp/authorization.hpp>
+#include <fetchpp/content_type.hpp>
 #include <fetchpp/fetch.hpp>
 #include <fetchpp/field.hpp>
 #include <fetchpp/get.hpp>
 #include <fetchpp/json_body.hpp>
-#include <fetchpp/message.hpp>
 #include <fetchpp/post.hpp>
+#include <fetchpp/response.hpp>
 
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/use_future.hpp>
 
 #include <boost/beast/core/tcp_stream.hpp>
-#include <boost/beast/ssl/ssl_stream.hpp>
 
 #include "helpers/format.hpp"
 #include "helpers/ioc_fixture.hpp"
@@ -26,8 +27,7 @@ using namespace test::helpers::http_literals;
 using test::helpers::ioc_fixture;
 
 template <typename T>
-using Response = fetchpp::http::response<T>;
-
+using Response = fetchpp::response<T>;
 template <typename T>
 using Request = fetchpp::request<T>;
 
@@ -54,6 +54,36 @@ TEST_CASE_METHOD(ioc_fixture, "async fetch", "[https][fetch][get][async]")
 }
 
 TEST_CASE_METHOD(ioc_fixture,
+                 "async fetch basic auth",
+                 "[https][fetch][basic_auth][authorization]")
+{
+  auto request =
+      make_request(fetchpp::http::verb::get,
+                   fetchpp::url::parse("basic-auth/david/totopaf"_https));
+  request.set(fetchpp::http::authorization::basic("david", "totopaf"));
+  auto response = fetchpp::async_fetch<StringResponse>(
+                      ioc, std::move(request), boost::asio::use_future)
+                      .get();
+
+  REQUIRE(response.result_int() == 200);
+}
+
+TEST_CASE_METHOD(ioc_fixture,
+                 "async fetch bearer auth",
+                 "[https][fetch][bearer_auth][authorization]")
+{
+  auto request = make_request(fetchpp::http::verb::get,
+                              fetchpp::url::parse("bearer"_https));
+  request.set(
+      fetchpp::http::authorization::bearer("this_is_a_bearer_token_probably"));
+  auto response = fetchpp::async_fetch<StringResponse>(
+                      ioc, std::move(request), boost::asio::use_future)
+                      .get();
+
+  REQUIRE(response.result_int() == 200);
+}
+
+TEST_CASE_METHOD(ioc_fixture,
                  "async fetch with ssl context",
                  "[https][fetch][get][async][verify_peer][!mayfail]")
 {
@@ -66,8 +96,7 @@ TEST_CASE_METHOD(ioc_fixture,
   // We need this for some broken build of boost ssl backend
   sslc.add_verify_path("/etc/ssl/certs");
   sslc.add_verify_path("/etc/ssl/private");
-  sslc.set_verify_mode(context::verify_peer |
-                       context::verify_fail_if_no_peer_cert);
+  sslc.set_verify_mode(context::verify_peer);
   auto response = fetchpp::async_fetch<StringResponse>(
                       ioc, sslc, std::move(request), boost::asio::use_future)
                       .get();
@@ -123,6 +152,7 @@ TEST_CASE_METHOD(ioc_fixture, "async post json", "[https][post][json][async]")
                       fetchpp::headers{{"X-corp-header", "corp value"}},
                       boost::asio::use_future)
                       .get();
-  REQUIRE(response.body().at("headers").at("X-Corp-Header") == "corp value");
-  REQUIRE(response.body().at("json") == nlohmann::json({{"a key", "a value"}}));
+  REQUIRE(response.result_int() == 200);
+  CHECK(response.body().at("headers").at("X-Corp-Header") == "corp value");
+  CHECK(response.body().at("json") == nlohmann::json({{"a key", "a value"}}));
 }

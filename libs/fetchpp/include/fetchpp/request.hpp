@@ -1,5 +1,6 @@
 #pragma once
 
+#include <fetchpp/authorization.hpp>
 #include <fetchpp/options.hpp>
 #include <fetchpp/url.hpp>
 #include <fetchpp/version.hpp>
@@ -12,12 +13,14 @@
 
 #include <fetchpp/alias/http.hpp>
 
+#include <optional>
+
 namespace fetchpp
 {
 namespace detail
 {
 void set_options(options const& opt,
-                 std::string const& domain,
+                 std::string const& host,
                  http::fields& fields);
 }
 
@@ -34,10 +37,19 @@ public:
   boost::string_view content_type() const;
   void content_type(beast::string_param const& param);
 
+  using base_t::set;
+  void set(http::authorization::methods const& m);
+
 private:
   url _uri;
   fetchpp::options _opt;
 };
+
+template <typename Body>
+std::optional<std::string_view> select_content_type(Body const&)
+{
+  return std::nullopt;
+}
 
 template <typename Request = request<http::string_body>,
           typename Value = typename Request::body_type::value_type>
@@ -61,7 +73,7 @@ request<BodyType>::request(http::verb verb, url uri, fetchpp::options opt)
     _uri(std::move(uri)),
     _opt(std::move(opt))
 {
-  detail::set_options(_opt, _uri.domain(), *this);
+  detail::set_options(_opt, _uri.host(), *this);
 }
 
 template <typename BodyType>
@@ -82,11 +94,19 @@ void request<BodyType>::content_type(beast::string_param const& param)
   this->insert(http::field::content_type, param);
 }
 
+template <typename BodyType>
+void request<BodyType>::set(http::authorization::methods const& m)
+{
+  this->set(fetchpp::http::field::authorization, m);
+}
+
 template <typename Request, typename Value>
 Request make_request(http::verb verb, url uri, options opt, Value body)
 {
   auto req = Request(verb, uri, opt);
   req.body() = std::move(body);
+  if (auto ct = select_content_type(req.body()); ct.has_value())
+    req.content_type(*ct);
   req.prepare_payload();
   return req;
 }

@@ -8,17 +8,22 @@ add_library(fetchpp
   include/fetchpp/post.hpp
   include/fetchpp/field_arg.hpp
   include/fetchpp/field.hpp
-  include/fetchpp/message.hpp
   include/fetchpp/process_one.hpp
   include/fetchpp/cache_mode.hpp
   include/fetchpp/json_body.hpp
+  include/fetchpp/response.hpp
+  include/fetchpp/request.hpp
+  include/fetchpp/authorization.hpp
 
   include/fetchpp/detail/json_body.hpp
   include/fetchpp/detail/async_http_result.hpp
+  include/fetchpp/detail/connect_composer.hpp
 
   include/fetchpp/alias/beast.hpp
+  include/fetchpp/alias/error_code.hpp
   include/fetchpp/alias/http.hpp
   include/fetchpp/alias/net.hpp
+  include/fetchpp/alias/tcp.hpp
 
   include/fetchpp/url.hpp
 
@@ -28,6 +33,8 @@ add_library(fetchpp
   src/field_arg.cpp
   src/cache_mode.cpp
   src/request.cpp
+  src/content_type.cpp
+  src/authorization.cpp
 )
 
 target_include_directories(fetchpp
