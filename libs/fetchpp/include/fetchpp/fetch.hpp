@@ -93,7 +93,7 @@ auto async_fetch(net::io_context& ioc,
       Response res;
       beast::flat_buffer buffer;
       tcp::resolver resolver;
-      temporary_data(AsyncStream pstream, Request req)
+      temporary_data(AsyncStream&& pstream, Request&& req)
         : stream(std::move(pstream)),
           req(std::move(req)),
           res(),
@@ -106,7 +106,7 @@ auto async_fetch(net::io_context& ioc,
     temporary_data& data;
     status state = status::starting;
 
-    op(AsyncStream stream, Request preq, handler_type& handler)
+    op(AsyncStream&& stream, Request&& preq, handler_type& handler)
       : base_type(std::move(handler), stream.get_executor()),
         data(beast::allocate_stable<temporary_data>(
             *this, std::move(stream), std::move(preq)))
@@ -149,7 +149,8 @@ auto async_fetch(net::io_context& ioc,
         return;
       }
       state = status::connecting;
-      async_connect(data.stream, results, std::move(*this));
+      async_connect(
+          data.stream, data.req.uri().domain(), results, std::move(*this));
     }
   };
   AsyncStream stream(ioc, sslc);

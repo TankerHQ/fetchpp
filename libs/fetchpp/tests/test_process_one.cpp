@@ -63,7 +63,8 @@ TEST_CASE_METHOD(ioc_fixture, "connect", "[https][connect][async]")
   fetchpp::response<fetchpp::http::string_body> response;
 
   auto results = http_resolve_domain(ioc, url);
-  auto fut = fetchpp::async_connect(stream, results, boost::asio::use_future);
+  auto fut = fetchpp::async_connect(
+      stream, url.domain(), results, boost::asio::use_future);
   fut.get();
 
   auto fut2 = fetchpp::async_process_one(
@@ -89,7 +90,8 @@ TEST_CASE_METHOD(ioc_fixture,
   fetchpp::response<fetchpp::http::string_body> response;
 
   auto results = http_resolve_domain(ioc, url);
-  auto fut = fetchpp::async_connect(stream, results, boost::asio::use_future);
+  auto fut = fetchpp::async_connect(
+      stream, url.domain(), results, boost::asio::use_future);
   fut.get();
 
   auto fut2 = fetchpp::async_process_one(
