@@ -149,7 +149,8 @@ auto async_fetch(net::io_context& ioc,
         return;
       }
       state = status::connecting;
-      async_connect(data.stream, results, std::move(*this));
+      async_connect(
+          data.stream, data.req.uri().domain(), results, std::move(*this));
     }
   };
   AsyncStream stream(ioc, sslc);
