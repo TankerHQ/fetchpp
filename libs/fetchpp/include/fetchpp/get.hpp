@@ -10,7 +10,7 @@ auto async_get(net::io_context& ioc,
                std::string const& url_str,
                headers fields,
                GetHandler&& handler)
-    -> detail::async_http_result_t<GetHandler, Response>
+    -> detail::async_http_return_type_t<GetHandler, Response>
 {
   auto request = make_request(http::verb::get, url::parse(url_str), {});
   for (auto const& field : fields)

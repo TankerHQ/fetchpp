@@ -11,7 +11,7 @@ auto async_post(net::io_context& ioc,
                 typename Request::body_type::value_type data,
                 headers fields,
                 GetHandler&& handler)
-    -> detail::async_http_result_t<GetHandler, Response>
+    -> detail::async_http_return_type_t<GetHandler, Response>
 {
   auto request = make_request<Request>(
       http::verb::post, url::parse(url_str), {}, std::move(data));
