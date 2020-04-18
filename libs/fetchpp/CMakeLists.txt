@@ -18,6 +18,8 @@ add_library(fetchpp
   include/fetchpp/detail/json_body.hpp
   include/fetchpp/detail/async_http_result.hpp
   include/fetchpp/detail/connect_composer.hpp
+  include/fetchpp/detail/fetch.hpp
+  include/fetchpp/detail/http_stable_async.hpp
 
   include/fetchpp/alias/beast.hpp
   include/fetchpp/alias/error_code.hpp

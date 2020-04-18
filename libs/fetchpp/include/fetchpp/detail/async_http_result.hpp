@@ -2,6 +2,7 @@
 
 #include <boost/asio/async_result.hpp>
 
+#include <fetchpp/alias/error_code.hpp>
 #include <fetchpp/alias/net.hpp>
 
 namespace fetchpp::detail
