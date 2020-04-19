@@ -66,3 +66,4 @@ class FetchppConan(ConanFile):
 
     def package_info(self):
         self.cpp_info.libs = ["fetchpp"]
+        self.cpp_info.defines.append("BOOST_BEAST_SEPARATE_COMPILATION")

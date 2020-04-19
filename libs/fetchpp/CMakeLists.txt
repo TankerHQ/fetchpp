@@ -37,6 +37,7 @@ add_library(fetchpp
   src/request.cpp
   src/content_type.cpp
   src/authorization.cpp
+  src/beast.cpp
 )
 
 target_include_directories(fetchpp
@@ -46,6 +47,7 @@ target_include_directories(fetchpp
   PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
+target_compile_definitions(fetchpp PUBLIC BOOST_BEAST_SEPARATE_COMPILATION)
 
 target_link_libraries(fetchpp PUBLIC CONAN_PKG::Boost CONAN_PKG::jsonformoderncpp)
 
