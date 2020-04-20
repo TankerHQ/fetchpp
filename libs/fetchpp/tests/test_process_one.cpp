@@ -9,6 +9,7 @@
 #include <fetchpp/version.hpp>
 
 #include <boost/asio/use_future.hpp>
+#include <boost/beast/core/flat_buffer.hpp>
 #include <boost/beast/http/empty_body.hpp>
 #include <boost/beast/http/span_body.hpp>
 #include <boost/beast/http/string_body.hpp>
@@ -36,6 +37,7 @@ TEST_CASE_METHOD(ioc_fixture,
 {
   fetchpp::ssl::context context(fetchpp::ssl::context::tlsv12_client);
   fetchpp::beast::ssl_stream<fetchpp::beast::tcp_stream> stream(ioc, context);
+  fetchpp::beast::flat_buffer buffer;
   auto const url = fetchpp::url::parse("/get"_https);
   fetchpp::request<fetchpp::http::empty_body> request(
       fetchpp::http::verb::get, url, fetchpp::options{});
@@ -44,7 +46,7 @@ TEST_CASE_METHOD(ioc_fixture,
   http_ssl_connect(ioc, stream, url);
 
   auto fut = fetchpp::async_process_one(
-      stream, request, response, boost::asio::use_future);
+      stream, request, response, buffer, boost::asio::use_future);
   fut.get();
   REQUIRE(response.result_int() == 200);
   REQUIRE(response.at(fetchpp::field::content_type) == "application/json");
@@ -54,6 +56,7 @@ TEST_CASE_METHOD(ioc_fixture, "connect", "[https][connect][async]")
 {
   fetchpp::ssl::context context(fetchpp::ssl::context::tlsv12_client);
   fetchpp::beast::ssl_stream<fetchpp::beast::tcp_stream> stream(ioc, context);
+  fetchpp::beast::flat_buffer buffer;
 
   auto const url = fetchpp::url::parse("/get"_https);
   auto request =
@@ -68,7 +71,7 @@ TEST_CASE_METHOD(ioc_fixture, "connect", "[https][connect][async]")
   fut.get();
 
   auto fut2 = fetchpp::async_process_one(
-      stream, request, response, boost::asio::use_future);
+      stream, request, response, buffer, boost::asio::use_future);
   fut2.get();
   REQUIRE(response.result_int() == 200);
   REQUIRE(response.at(fetchpp::field::content_type) == "application/json");
@@ -80,6 +83,7 @@ TEST_CASE_METHOD(ioc_fixture,
 {
   fetchpp::ssl::context context(fetchpp::ssl::context::tlsv12_client);
   fetchpp::beast::ssl_stream<fetchpp::beast::tcp_stream> stream(ioc, context);
+  fetchpp::beast::flat_buffer buffer;
 
   auto data = std::string("my dearest data");
   auto const url = fetchpp::url::parse("/anything"_https);
@@ -95,7 +99,7 @@ TEST_CASE_METHOD(ioc_fixture,
   fut.get();
 
   auto fut2 = fetchpp::async_process_one(
-      stream, request, response, boost::asio::use_future);
+      stream, request, response, buffer, boost::asio::use_future);
   fut2.get();
   REQUIRE(response.result_int() == 200);
   REQUIRE(response.at(fetchpp::field::content_type) == "application/json");

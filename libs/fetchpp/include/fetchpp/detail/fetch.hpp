@@ -74,7 +74,8 @@ struct fetch_composer : stable_async_t<AsyncStream, Response, CompletionToken>
         return;
       case connecting:
         state = status::processing;
-        async_process_one(data.stream, data.req, data.res, std::move(*this));
+        async_process_one(
+            data.stream, data.req, data.res, data.buffer, std::move(*this));
         return;
       default:
         assert(0);
