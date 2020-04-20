@@ -51,7 +51,7 @@ struct fetch_composer : stable_async_t<AsyncStream, Response, CompletionToken>
   temp_data_t& data;
   status state = status::starting;
 
-  fetch_composer(AsyncStream&& stream, Request&& preq, handler_type& handler)
+  fetch_composer(AsyncStream&& stream, Request&& preq, handler_type&& handler)
     : base_type_t(std::move(handler), stream.get_executor()),
       data(beast::allocate_stable<temp_data_t>(
           *this, std::move(stream), std::move(preq)))
@@ -114,7 +114,9 @@ auto async_fetch_impl(net::io_context& ioc,
   async_completion_t async_comp{token};
   request.keep_alive(false);
   detail::fetch_composer<AsyncStream, Response, Request, CompletionToken>(
-      std::move(stream), std::move(request), async_comp.completion_handler);
+      std::move(stream),
+      std::move(request),
+      std::move(async_comp.completion_handler));
   return async_comp.result.get();
 }
 
