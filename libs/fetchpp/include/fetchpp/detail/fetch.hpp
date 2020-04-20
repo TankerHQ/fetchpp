@@ -4,7 +4,10 @@
 #include <fetchpp/process_one.hpp>
 
 #include <fetchpp/detail/async_http_result.hpp>
+#include <fetchpp/detail/coroutine.hpp>
 #include <fetchpp/detail/http_stable_async.hpp>
+
+#include <boost/asio/coroutine.hpp>
 
 #include <fetchpp/alias/error_code.hpp>
 #include <fetchpp/alias/net.hpp>
@@ -33,23 +36,16 @@ template <typename AsyncStream,
           typename Response,
           typename Request,
           typename CompletionToken>
-struct fetch_composer : stable_async_t<AsyncStream, Response, CompletionToken>
+struct fetch_composer : stable_async_t<AsyncStream, Response, CompletionToken>,
+                        boost::asio::coroutine
 {
   using base_type_t = stable_async_t<AsyncStream, Response, CompletionToken>;
   using handler_type =
       typename detail::async_http_completion_handler_t<CompletionToken,
                                                        Response>;
   using temp_data_t = fetch_temporary_data<AsyncStream, Request, Response>;
-  enum status : int
-  {
-    starting,
-    resolving,
-    connecting,
-    processing,
-  };
 
   temp_data_t& data;
-  status state = status::starting;
 
   fetch_composer(AsyncStream&& stream, Request&& preq, handler_type&& handler)
     : base_type_t(std::move(handler), stream.get_executor()),
@@ -58,45 +54,30 @@ struct fetch_composer : stable_async_t<AsyncStream, Response, CompletionToken>
   {
     (*this)();
   }
-
   void operator()(error_code ec = {})
   {
-    if (!ec)
+    FETCHPP_REENTER(*this)
     {
-      switch (state)
+      if (!ec)
       {
-      case starting:
-        state = status::resolving;
-        data.resolver.async_resolve(data.req.uri().domain(),
-                                    std::to_string(data.req.uri().port()),
-                                    net::ip::resolver_base::numeric_service,
-                                    std::move(*this));
-        return;
-      case connecting:
-        state = status::processing;
-        async_process_one(
+        FETCHPP_YIELD data.resolver.async_resolve(
+            data.req.uri().domain(),
+            std::to_string(data.req.uri().port()),
+            net::ip::resolver_base::numeric_service,
+            std::move(*this));
+        FETCHPP_YIELD async_process_one(
             data.stream, data.req, data.res, data.buffer, std::move(*this));
-        return;
-      default:
-        assert(0);
-        break;
-      case processing:
-        break;
       }
+      this->complete_now(ec, std::move(std::exchange(data.res, Response{})));
     }
-    this->complete_now(ec, std::move(std::exchange(data.res, Response{})));
   }
 
   void operator()(error_code ec, tcp::resolver::results_type results)
   {
-    if (ec)
-    {
-      this->complete_now(ec, std::move(std::exchange(data.res, Response{})));
-      return;
-    }
-    state = status::connecting;
-    async_connect(
-        data.stream, data.req.uri().domain(), results, std::move(*this));
+    if (!ec)
+      return async_connect(
+          data.stream, data.req.uri().domain(), results, std::move(*this));
+    this->complete_now(ec, std::move(std::exchange(data.res, Response{})));
   }
 };
 
@@ -132,7 +113,6 @@ struct fetch_composer_with_ssl
   void operator()(Self& self)
   {
     async_fetch_impl<Response>(ioc, sslc, std::move(request), std::move(self));
-    return;
   }
 
   template <typename Self>
@@ -141,5 +121,4 @@ struct fetch_composer_with_ssl
     self.complete(ec, std::move(response));
   }
 };
-
 }

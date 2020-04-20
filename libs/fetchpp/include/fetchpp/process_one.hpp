@@ -6,12 +6,12 @@
 #include <boost/beast/http/read.hpp>
 #include <boost/beast/http/write.hpp>
 
+#include <fetchpp/detail/coroutine.hpp>
+
 #include <fetchpp/alias/beast.hpp>
 #include <fetchpp/alias/error_code.hpp>
 #include <fetchpp/alias/http.hpp>
 #include <fetchpp/alias/net.hpp>
-
-#include <memory>
 
 namespace fetchpp
 {
@@ -27,34 +27,23 @@ struct process_one_composer
   Request& req;
   Response& res;
   Buffer& buffer;
-
-  enum
-  {
-    starting,
-    sending,
-    receiving,
-  } status = starting;
+  net::coroutine coro = net::coroutine{};
 
   template <typename Self>
   void operator()(Self& self, error_code ec = error_code{}, std::size_t = 0)
   {
-    if (!ec)
+    if (ec)
     {
-      switch (status)
-      {
-      case starting:
-        status = sending;
-        http::async_write(stream, req, std::move(self));
-        return;
-      case sending:
-        status = receiving;
-        http::async_read(stream, buffer, res, std::move(self));
-        return;
-      case receiving:
-        break;
-      }
+      self.complete(ec);
+      return;
     }
-    self.complete(ec);
+
+    FETCHPP_REENTER(coro)
+    {
+      FETCHPP_YIELD http::async_write(stream, req, std::move(self));
+      FETCHPP_YIELD http::async_read(stream, buffer, res, std::move(self));
+      self.complete(ec);
+    }
   }
 };
 }
