@@ -23,7 +23,6 @@ public:
                         std::string charset = "",
                         std::string boundary = "");
 
-  static content_type parse(boost::string_view sv);
   static content_type parse(std::string_view sv);
 
   std::string const& type() const;

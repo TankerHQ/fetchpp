@@ -47,7 +47,7 @@ target_include_directories(fetchpp
   PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
-target_compile_definitions(fetchpp PUBLIC BOOST_BEAST_SEPARATE_COMPILATION)
+target_compile_definitions(fetchpp PUBLIC BOOST_BEAST_SEPARATE_COMPILATION BOOST_BEAST_USE_STD_STRING_VIEW)
 
 target_link_libraries(fetchpp PUBLIC CONAN_PKG::Boost CONAN_PKG::jsonformoderncpp)
 

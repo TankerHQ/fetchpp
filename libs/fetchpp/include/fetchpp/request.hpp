@@ -34,7 +34,7 @@ public:
 
   fetchpp::options const& options() const;
   url const& uri() const;
-  boost::string_view content_type() const;
+  std::string_view content_type() const;
   void content_type(beast::string_param const& param);
 
   using base_t::set;

@@ -12,11 +12,6 @@ content_type::content_type(std::string type,
 {
 }
 
-content_type content_type::parse(boost::string_view sv)
-{
-  return content_type::parse(std::string_view{sv.data(), sv.size()});
-}
-
 content_type content_type::parse(std::string_view sv)
 {
   // https://regex101.com/r/JGZNn8/2/
