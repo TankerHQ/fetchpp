@@ -17,6 +17,31 @@ namespace fetchpp
 {
 namespace detail
 {
+
+template <typename AsyncStream,
+          typename Buffer,
+          typename Response,
+          typename CompletionToken,
+          bool = Response::is_request::value == false>
+auto run_async_read(AsyncStream& stream,
+                    Buffer& buffer,
+                    Response& response,
+                    CompletionToken&& token)
+{
+  return http::async_read(stream, buffer, response, std::move(token));
+}
+
+template <typename AsyncStream,
+          typename Request,
+          typename CompletionToken,
+          bool = Request::is_request::value == true>
+auto run_async_write(AsyncStream& stream,
+                     Request& request,
+                     CompletionToken&& token)
+{
+  return http::async_write(stream, request, std::move(token));
+}
+
 template <typename AsyncStream,
           typename Request,
           typename Response,
@@ -40,8 +65,8 @@ struct process_one_composer
 
     FETCHPP_REENTER(coro)
     {
-      FETCHPP_YIELD http::async_write(stream, req, std::move(self));
-      FETCHPP_YIELD http::async_read(stream, buffer, res, std::move(self));
+      FETCHPP_YIELD run_async_write(stream, req, std::move(self));
+      FETCHPP_YIELD run_async_read(stream, buffer, res, std::move(self));
       self.complete(ec);
     }
   }
