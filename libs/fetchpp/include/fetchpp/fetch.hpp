@@ -1,10 +1,13 @@
 #pragma once
 
-#include <boost/beast/core/tcp_stream.hpp>
-#include <boost/beast/ssl/ssl_stream.hpp>
+#include <fetchpp/request.hpp>
+#include <fetchpp/response.hpp>
 
 #include <fetchpp/detail/async_http_result.hpp>
 #include <fetchpp/detail/fetch.hpp>
+
+#include <boost/beast/core/tcp_stream.hpp>
+#include <boost/beast/ssl/ssl_stream.hpp>
 
 #include <fetchpp/alias/beast.hpp>
 #include <fetchpp/alias/error_code.hpp>
@@ -41,6 +44,27 @@ auto async_fetch(net::io_context& ioc, Request request, CompletionToken&& token)
                                                          std::move(request)},
       token,
       ioc);
+}
+
+template <typename Request, typename CompletionToken>
+auto async_fetch(net::io_context& ioc,
+                 net::ssl::context& sslc,
+                 Request request,
+                 CompletionToken&& token)
+    -> detail::async_http_return_type_t<CompletionToken, response>
+{
+  static_assert(Request::is_request::value == true,
+                "Request type is not valid");
+  return async_fetch<response>(ioc, sslc, std::move(request), token);
+}
+
+template <typename Request, typename CompletionToken>
+auto async_fetch(net::io_context& ioc, Request request, CompletionToken&& token)
+    -> detail::async_http_return_type_t<CompletionToken, response>
+{
+  static_assert(Request::is_request::value == true,
+                "Request type is not valid");
+  return async_fetch<response>(ioc, std::move(request), token);
 }
 
 }

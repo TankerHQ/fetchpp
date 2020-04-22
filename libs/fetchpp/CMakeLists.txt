@@ -11,6 +11,7 @@ add_library(fetchpp
   include/fetchpp/process_one.hpp
   include/fetchpp/cache_mode.hpp
   include/fetchpp/json_body.hpp
+  include/fetchpp/simple_response.hpp
   include/fetchpp/response.hpp
   include/fetchpp/request.hpp
   include/fetchpp/authorization.hpp
@@ -36,6 +37,7 @@ add_library(fetchpp
   src/field_arg.cpp
   src/cache_mode.cpp
   src/request.cpp
+  src/response.cpp
   src/content_type.cpp
   src/authorization.cpp
   src/beast.cpp

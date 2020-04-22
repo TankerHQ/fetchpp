@@ -7,7 +7,9 @@
 #include <fetchpp/detail/coroutine.hpp>
 #include <fetchpp/detail/http_stable_async.hpp>
 
-#include <boost/asio/coroutine.hpp>
+#include <boost/beast/core/flat_buffer.hpp>
+#include <boost/beast/core/tcp_stream.hpp>
+#include <boost/beast/ssl/ssl_stream.hpp>
 
 #include <fetchpp/alias/error_code.hpp>
 #include <fetchpp/alias/net.hpp>
