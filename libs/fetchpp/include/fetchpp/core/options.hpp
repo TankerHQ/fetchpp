@@ -1,10 +1,7 @@
 #pragma once
 
-#include <fetchpp/cache_mode.hpp>
-#include <fetchpp/field_arg.hpp>
-#include <fetchpp/redirect_handling.hpp>
-
-#include <fetchpp/alias/net.hpp>
+#include <fetchpp/core/cache_mode.hpp>
+#include <fetchpp/core/redirect_handling.hpp>
 
 #include <vector>
 

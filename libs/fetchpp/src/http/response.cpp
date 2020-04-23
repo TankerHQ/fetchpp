@@ -1,4 +1,4 @@
-#include <fetchpp/response.hpp>
+#include <fetchpp/http/response.hpp>
 
 #include <boost/asio/buffers_iterator.hpp>
 #include <boost/beast/core/buffers_to_string.hpp>

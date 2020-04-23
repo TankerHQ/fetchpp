@@ -1,4 +1,4 @@
-#include <fetchpp/url.hpp>
+#include <fetchpp/http/url.hpp>
 
 #include <exception>
 #include <regex>

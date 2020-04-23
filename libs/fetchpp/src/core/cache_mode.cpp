@@ -1,4 +1,4 @@
-#include <fetchpp/cache_mode.hpp>
+#include <fetchpp/core/cache_mode.hpp>
 
 namespace fetchpp
 {

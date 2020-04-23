@@ -5,9 +5,8 @@
 // is fixed
 #include <ostream>
 
-#include <fetchpp/field.hpp>
+#include <fetchpp/http/field.hpp>
 
-#include <initializer_list>
 #include <string>
 
 namespace fetchpp
@@ -28,5 +27,4 @@ struct field_arg
   field_arg(std::string field_name, std::string value);
 };
 
-using headers = std::initializer_list<field_arg>;
 }

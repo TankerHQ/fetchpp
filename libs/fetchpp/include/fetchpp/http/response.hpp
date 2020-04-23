@@ -1,7 +1,7 @@
 #pragma once
 
-#include <fetchpp/content_type.hpp>
-#include <fetchpp/simple_response.hpp>
+#include <fetchpp/http/content_type.hpp>
+#include <fetchpp/http/simple_response.hpp>
 
 #include <boost/beast/http/vector_body.hpp>
 

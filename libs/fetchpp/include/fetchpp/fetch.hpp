@@ -1,13 +1,10 @@
 #pragma once
 
-#include <fetchpp/request.hpp>
-#include <fetchpp/response.hpp>
+#include <fetchpp/http/request.hpp>
+#include <fetchpp/http/response.hpp>
 
-#include <fetchpp/detail/async_http_result.hpp>
-#include <fetchpp/detail/fetch.hpp>
-
-#include <boost/beast/core/tcp_stream.hpp>
-#include <boost/beast/ssl/ssl_stream.hpp>
+#include <fetchpp/core/detail/async_http_result.hpp>
+#include <fetchpp/core/detail/fetch.hpp>
 
 #include <fetchpp/alias/beast.hpp>
 #include <fetchpp/alias/error_code.hpp>

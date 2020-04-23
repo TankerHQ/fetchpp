@@ -6,22 +6,30 @@ add_library(fetchpp
   include/fetchpp/fetch.hpp
   include/fetchpp/get.hpp
   include/fetchpp/post.hpp
-  include/fetchpp/field_arg.hpp
-  include/fetchpp/field.hpp
-  include/fetchpp/process_one.hpp
-  include/fetchpp/cache_mode.hpp
-  include/fetchpp/json_body.hpp
-  include/fetchpp/simple_response.hpp
-  include/fetchpp/response.hpp
-  include/fetchpp/request.hpp
-  include/fetchpp/authorization.hpp
+  include/fetchpp/version.hpp
 
-  include/fetchpp/detail/json_body.hpp
-  include/fetchpp/detail/async_http_result.hpp
-  include/fetchpp/detail/connect_composer.hpp
-  include/fetchpp/detail/fetch.hpp
-  include/fetchpp/detail/coroutine.hpp
-  include/fetchpp/detail/http_stable_async.hpp
+  include/fetchpp/core/detail/async_http_result.hpp
+  include/fetchpp/core/detail/connect_composer.hpp
+  include/fetchpp/core/detail/coroutine.hpp
+  include/fetchpp/core/detail/fetch.hpp
+  include/fetchpp/core/detail/http_stable_async.hpp
+  include/fetchpp/core/cache_mode.hpp
+  include/fetchpp/core/field_arg.hpp
+  include/fetchpp/core/connect.hpp
+  include/fetchpp/core/options.hpp
+  include/fetchpp/core/process_one.hpp
+  include/fetchpp/core/redirect_handling.hpp
+  
+  include/fetchpp/http/detail/json_body.hpp
+  include/fetchpp/http/authorization.hpp
+  include/fetchpp/http/content_type.hpp
+  include/fetchpp/http/field.hpp
+  include/fetchpp/http/headers.hpp
+  include/fetchpp/http/json_body.hpp
+  include/fetchpp/http/request.hpp
+  include/fetchpp/http/response.hpp
+  include/fetchpp/http/simple_response.hpp
+  include/fetchpp/http/url.hpp
 
   include/fetchpp/alias/beast.hpp
   include/fetchpp/alias/error_code.hpp
@@ -29,17 +37,14 @@ add_library(fetchpp
   include/fetchpp/alias/net.hpp
   include/fetchpp/alias/tcp.hpp
 
-  include/fetchpp/url.hpp
-
-  src/detail/json_body.cpp
-
-  src/url.cpp
-  src/field_arg.cpp
-  src/cache_mode.cpp
-  src/request.cpp
-  src/response.cpp
-  src/content_type.cpp
-  src/authorization.cpp
+  src/core/cache_mode.cpp
+  src/http/detail/json_body.cpp
+  src/http/authorization.cpp
+  src/http/content_type.cpp
+  src/http/field_arg.cpp
+  src/http/request.cpp
+  src/http/response.cpp
+  src/http/url.cpp
   src/beast.cpp
 )
 

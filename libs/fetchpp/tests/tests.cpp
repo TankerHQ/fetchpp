@@ -1,20 +1,16 @@
 #include <catch2/catch.hpp>
 
-#include <boost/beast/core/buffers_to_string.hpp>
-
-#include <fetchpp/authorization.hpp>
-#include <fetchpp/content_type.hpp>
 #include <fetchpp/fetch.hpp>
-#include <fetchpp/field.hpp>
 #include <fetchpp/get.hpp>
-#include <fetchpp/json_body.hpp>
 #include <fetchpp/post.hpp>
-#include <fetchpp/response.hpp>
+
+#include <fetchpp/http/authorization.hpp>
+#include <fetchpp/http/content_type.hpp>
+#include <fetchpp/http/json_body.hpp>
+#include <fetchpp/http/response.hpp>
 
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/use_future.hpp>
-
-#include <boost/beast/core/tcp_stream.hpp>
 
 #include "helpers/format.hpp"
 #include "helpers/ioc_fixture.hpp"
@@ -187,7 +183,7 @@ TEST_CASE_METHOD(ioc_fixture, "http async get", "[https][get][async]")
       fetchpp::async_get(
           ioc,
           "get"_https,
-          fetchpp::headers{{"X-random-header", "this is a cute value"}},
+          fetchpp::http::headers{{"X-random-header", "this is a cute value"}},
           boost::asio::use_future)
           .get();
   REQUIRE(response.result_int() == 200);
@@ -205,7 +201,7 @@ TEST_CASE_METHOD(ioc_fixture, "async post string", "[https][post][async]")
                       ioc,
                       "post"_https,
                       std::move(data),
-                      fetchpp::headers{{"X-corp-header", "corp value"}},
+                      fetchpp::http::headers{{"X-corp-header", "corp value"}},
                       boost::asio::use_future)
                       .get();
   REQUIRE(response.result_int() == 200);
@@ -221,7 +217,7 @@ TEST_CASE_METHOD(ioc_fixture, "async post json", "[https][post][json][async]")
                       ioc,
                       "post"_https,
                       {{{"a key", "a value"}}},
-                      fetchpp::headers{{"X-corp-header", "corp value"}},
+                      fetchpp::http::headers{{"X-corp-header", "corp value"}},
                       boost::asio::use_future)
                       .get();
   REQUIRE(response.result_int() == 200);

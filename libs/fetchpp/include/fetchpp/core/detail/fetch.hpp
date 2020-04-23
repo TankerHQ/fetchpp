@@ -1,11 +1,11 @@
 #pragma once
 
-#include <fetchpp/connect.hpp>
-#include <fetchpp/process_one.hpp>
+#include <fetchpp/core/connect.hpp>
+#include <fetchpp/core/process_one.hpp>
 
-#include <fetchpp/detail/async_http_result.hpp>
-#include <fetchpp/detail/coroutine.hpp>
-#include <fetchpp/detail/http_stable_async.hpp>
+#include <fetchpp/core/detail/async_http_result.hpp>
+#include <fetchpp/core/detail/coroutine.hpp>
+#include <fetchpp/core/detail/http_stable_async.hpp>
 
 #include <boost/beast/core/flat_buffer.hpp>
 #include <boost/beast/core/tcp_stream.hpp>

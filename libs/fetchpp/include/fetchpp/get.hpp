@@ -1,14 +1,15 @@
 #pragma once
 
 #include <fetchpp/fetch.hpp>
-#include <fetchpp/request.hpp>
+
+#include <fetchpp/http/headers.hpp>
 
 namespace fetchpp
 {
 template <typename GetHandler>
 auto async_get(net::io_context& ioc,
                std::string const& url_str,
-               headers fields,
+               http::headers fields,
                GetHandler&& handler)
 {
   auto request = make_request(http::verb::get, url::parse(url_str), {});

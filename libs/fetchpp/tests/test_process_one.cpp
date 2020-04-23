@@ -1,12 +1,12 @@
 #include <catch2/catch.hpp>
 
-#include <fetchpp/connect.hpp>
-#include <fetchpp/process_one.hpp>
-
-#include <fetchpp/field.hpp>
-#include <fetchpp/request.hpp>
-#include <fetchpp/response.hpp>
+#include <fetchpp/core/connect.hpp>
+#include <fetchpp/core/process_one.hpp>
 #include <fetchpp/version.hpp>
+
+#include <fetchpp/http/field.hpp>
+#include <fetchpp/http/request.hpp>
+#include <fetchpp/http/response.hpp>
 
 #include <boost/asio/use_future.hpp>
 #include <boost/beast/core/flat_buffer.hpp>

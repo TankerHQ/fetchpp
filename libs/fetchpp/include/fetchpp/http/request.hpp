@@ -1,8 +1,8 @@
 #pragma once
 
-#include <fetchpp/authorization.hpp>
-#include <fetchpp/options.hpp>
-#include <fetchpp/url.hpp>
+#include <fetchpp/core/options.hpp>
+#include <fetchpp/http/authorization.hpp>
+#include <fetchpp/http/url.hpp>
 #include <fetchpp/version.hpp>
 
 #include <boost/beast/http/empty_body.hpp>

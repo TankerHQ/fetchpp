@@ -1,7 +1,8 @@
 #pragma once
 
+#include <fetchpp/core/detail/async_http_result.hpp>
+
 #include <boost/beast/core/async_base.hpp>
-#include <fetchpp/detail/async_http_result.hpp>
 
 #include <fetchpp/alias/beast.hpp>
 

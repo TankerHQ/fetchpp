@@ -1,4 +1,4 @@
-#include <fetchpp/request.hpp>
+#include <fetchpp/http/request.hpp>
 
 namespace fetchpp
 {

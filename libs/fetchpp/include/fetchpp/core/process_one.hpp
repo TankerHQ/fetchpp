@@ -1,12 +1,10 @@
 #pragma once
 
-#include <fetchpp/request.hpp>
+#include <fetchpp/core/detail/coroutine.hpp>
 
 #include <boost/asio/compose.hpp>
 #include <boost/beast/http/read.hpp>
 #include <boost/beast/http/write.hpp>
-
-#include <fetchpp/detail/coroutine.hpp>
 
 #include <fetchpp/alias/beast.hpp>
 #include <fetchpp/alias/error_code.hpp>

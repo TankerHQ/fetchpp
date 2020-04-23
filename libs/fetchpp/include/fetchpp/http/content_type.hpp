@@ -1,14 +1,10 @@
 #pragma once
 
 #include <array>
-#include <optional>
 #include <string>
 #include <string_view>
 
-#include <boost/algorithm/string/predicate.hpp>
-#include <ostream>
-
-#include <boost/utility/string_view.hpp>
+#include <iosfwd>
 
 namespace fetchpp
 {

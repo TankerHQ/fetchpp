@@ -1,9 +1,6 @@
 #pragma once
 
-#include <fetchpp/detail/json_body.hpp>
-
-#include <optional>
-#include <string_view>
+#include <fetchpp/http/detail/json_body.hpp>
 
 namespace fetchpp::http
 {

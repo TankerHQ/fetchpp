@@ -1,4 +1,4 @@
-#include <fetchpp/content_type.hpp>
+#include <fetchpp/http/content_type.hpp>
 
 #include <boost/algorithm/string/predicate.hpp>
 #include <regex>

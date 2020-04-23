@@ -1,9 +1,9 @@
 #pragma once
 
+#include <fetchpp/http/url.hpp>
+
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ssl/stream.hpp>
-
-#include <fetchpp/url.hpp>
 
 #include <fetchpp/alias/net.hpp>
 #include <fetchpp/alias/tcp.hpp>

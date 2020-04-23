@@ -1,7 +1,7 @@
-#include <fetchpp/content_type.hpp>
-#include <fetchpp/json_body.hpp>
-#include <fetchpp/request.hpp>
-#include <fetchpp/url.hpp>
+#include <fetchpp/http/content_type.hpp>
+#include <fetchpp/http/json_body.hpp>
+#include <fetchpp/http/request.hpp>
+#include <fetchpp/http/url.hpp>
 
 #include <iostream>
 #include <sstream>
