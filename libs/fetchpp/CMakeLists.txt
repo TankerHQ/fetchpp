@@ -11,6 +11,7 @@ add_library(fetchpp
   include/fetchpp/process_one.hpp
   include/fetchpp/cache_mode.hpp
   include/fetchpp/json_body.hpp
+  include/fetchpp/simple_response.hpp
   include/fetchpp/response.hpp
   include/fetchpp/request.hpp
   include/fetchpp/authorization.hpp
@@ -18,6 +19,9 @@ add_library(fetchpp
   include/fetchpp/detail/json_body.hpp
   include/fetchpp/detail/async_http_result.hpp
   include/fetchpp/detail/connect_composer.hpp
+  include/fetchpp/detail/fetch.hpp
+  include/fetchpp/detail/coroutine.hpp
+  include/fetchpp/detail/http_stable_async.hpp
 
   include/fetchpp/alias/beast.hpp
   include/fetchpp/alias/error_code.hpp
@@ -33,8 +37,10 @@ add_library(fetchpp
   src/field_arg.cpp
   src/cache_mode.cpp
   src/request.cpp
+  src/response.cpp
   src/content_type.cpp
   src/authorization.cpp
+  src/beast.cpp
 )
 
 target_include_directories(fetchpp
@@ -44,6 +50,7 @@ target_include_directories(fetchpp
   PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
+target_compile_definitions(fetchpp PUBLIC BOOST_BEAST_SEPARATE_COMPILATION BOOST_BEAST_USE_STD_STRING_VIEW)
 
 target_link_libraries(fetchpp PUBLIC CONAN_PKG::Boost CONAN_PKG::jsonformoderncpp)
 

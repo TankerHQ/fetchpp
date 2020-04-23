@@ -1,6 +1,6 @@
 #pragma once
 
-namespace fetchpp
+namespace fetchpp::net
 {
-namespace net = boost::asio;
+using namespace boost::asio;
 }

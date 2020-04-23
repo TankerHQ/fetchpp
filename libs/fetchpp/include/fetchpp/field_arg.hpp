@@ -1,5 +1,10 @@
 #pragma once
 
+// keep that here until
+// https://github.com/boostorg/beast/issues/1913
+// is fixed
+#include <ostream>
+
 #include <fetchpp/field.hpp>
 
 #include <initializer_list>
