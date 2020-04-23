@@ -39,10 +39,10 @@ add_library(fetchpp
 
   src/core/cache_mode.cpp
   src/http/detail/json_body.cpp
+  src/http/detail/request.cpp
   src/http/authorization.cpp
   src/http/content_type.cpp
   src/http/field_arg.cpp
-  src/http/request.cpp
   src/http/response.cpp
   src/http/url.cpp
   src/beast.cpp

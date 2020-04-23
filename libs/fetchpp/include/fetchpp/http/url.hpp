@@ -2,7 +2,7 @@
 
 #include <string>
 
-namespace fetchpp
+namespace fetchpp::http
 {
 class url
 {

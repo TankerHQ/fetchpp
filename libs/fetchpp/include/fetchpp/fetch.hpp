@@ -48,20 +48,20 @@ auto async_fetch(net::io_context& ioc,
                  net::ssl::context& sslc,
                  Request request,
                  CompletionToken&& token)
-    -> detail::async_http_return_type_t<CompletionToken, response>
+    -> detail::async_http_return_type_t<CompletionToken, http::response>
 {
   static_assert(Request::is_request::value == true,
                 "Request type is not valid");
-  return async_fetch<response>(ioc, sslc, std::move(request), token);
+  return async_fetch<http::response>(ioc, sslc, std::move(request), token);
 }
 
 template <typename Request, typename CompletionToken>
 auto async_fetch(net::io_context& ioc, Request request, CompletionToken&& token)
-    -> detail::async_http_return_type_t<CompletionToken, response>
+    -> detail::async_http_return_type_t<CompletionToken, http::response>
 {
   static_assert(Request::is_request::value == true,
                 "Request type is not valid");
-  return async_fetch<response>(ioc, std::move(request), token);
+  return async_fetch<http::response>(ioc, std::move(request), token);
 }
 
 }

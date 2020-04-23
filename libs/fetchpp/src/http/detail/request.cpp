@@ -1,8 +1,8 @@
-#include <fetchpp/http/request.hpp>
+#include <fetchpp/http/detail/request.hpp>
 
-namespace fetchpp
-{
-namespace detail
+#include <fetchpp/version.hpp>
+
+namespace fetchpp::http::detail
 {
 void set_options(options const& opt,
                  std::string const& host,
@@ -12,6 +12,5 @@ void set_options(options const& opt,
   fields.set(http::field::user_agent, USER_AGENT);
   fields.set(http::field::cache_control, to_string(opt.cache));
   // FIXME: redirect handling
-}
 }
 }

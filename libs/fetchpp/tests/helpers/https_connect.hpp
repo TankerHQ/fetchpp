@@ -11,7 +11,7 @@
 namespace test::helpers
 {
 inline auto http_resolve_domain(fetchpp::net::io_context& ioc,
-                                fetchpp::url const& url)
+                                fetchpp::http::url const& url)
 {
   fetchpp::tcp::resolver resolver(ioc);
   return resolver.resolve(url.domain(),
@@ -22,7 +22,7 @@ inline auto http_resolve_domain(fetchpp::net::io_context& ioc,
 template <typename Stream>
 void http_ssl_connect(fetchpp::net::io_context& ioc,
                       Stream& stream,
-                      fetchpp::url const& url)
+                      fetchpp::http::url const& url)
 {
   auto results = http_resolve_domain(ioc, url);
   fetchpp::beast::get_lowest_layer(stream).connect(results);

@@ -2,8 +2,8 @@
 
 #include <fetchpp/core/options.hpp>
 #include <fetchpp/http/authorization.hpp>
+#include <fetchpp/http/detail/request.hpp>
 #include <fetchpp/http/url.hpp>
-#include <fetchpp/version.hpp>
 
 #include <boost/beast/http/empty_body.hpp>
 #include <boost/beast/http/fields.hpp>
@@ -15,14 +15,8 @@
 
 #include <optional>
 
-namespace fetchpp
+namespace fetchpp::http
 {
-namespace detail
-{
-void set_options(options const& opt,
-                 std::string const& host,
-                 http::fields& fields);
-}
 
 template <typename BodyType = http::empty_body>
 class request : public beast::http::request<BodyType>

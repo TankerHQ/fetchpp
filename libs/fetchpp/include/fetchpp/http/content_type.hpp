@@ -6,7 +6,7 @@
 
 #include <iosfwd>
 
-namespace fetchpp
+namespace fetchpp::http
 {
 class content_type : private std::array<std::string, 3>
 {

@@ -3,7 +3,7 @@
 #include <exception>
 #include <regex>
 
-namespace fetchpp
+namespace fetchpp::http
 {
 namespace
 {
