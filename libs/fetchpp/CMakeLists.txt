@@ -13,6 +13,7 @@ add_library(fetchpp
   include/fetchpp/core/detail/coroutine.hpp
   include/fetchpp/core/detail/fetch.hpp
   include/fetchpp/core/detail/http_stable_async.hpp
+  include/fetchpp/core/detail/session_work_queue.hpp
   include/fetchpp/core/cache_mode.hpp
   include/fetchpp/core/field_arg.hpp
   include/fetchpp/core/connect.hpp
@@ -40,6 +41,7 @@ add_library(fetchpp
 
   src/core/cache_mode.cpp
   src/core/basic_transport.cpp
+  src/core/session_work_queue.cpp
   src/http/detail/json_body.cpp
   src/http/detail/request.cpp
   src/http/authorization.cpp
