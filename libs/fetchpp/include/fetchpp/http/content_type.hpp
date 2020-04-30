@@ -1,16 +1,12 @@
 #pragma once
 
 #include <array>
-#include <optional>
 #include <string>
 #include <string_view>
 
-#include <boost/algorithm/string/predicate.hpp>
-#include <ostream>
+#include <iosfwd>
 
-#include <boost/utility/string_view.hpp>
-
-namespace fetchpp
+namespace fetchpp::http
 {
 class content_type : private std::array<std::string, 3>
 {

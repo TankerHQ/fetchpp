@@ -2,7 +2,7 @@
 
 #include <fetchpp/alias/beast.hpp>
 
-namespace fetchpp
+namespace fetchpp::http
 {
 template <typename Body>
 using simple_response = beast::http::response<Body>;

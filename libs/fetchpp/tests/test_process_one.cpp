@@ -1,12 +1,12 @@
 #include <catch2/catch.hpp>
 
-#include <fetchpp/connect.hpp>
-#include <fetchpp/process_one.hpp>
-
-#include <fetchpp/field.hpp>
-#include <fetchpp/request.hpp>
-#include <fetchpp/response.hpp>
+#include <fetchpp/core/connect.hpp>
+#include <fetchpp/core/process_one.hpp>
 #include <fetchpp/version.hpp>
+
+#include <fetchpp/http/field.hpp>
+#include <fetchpp/http/request.hpp>
+#include <fetchpp/http/response.hpp>
 
 #include <boost/asio/use_future.hpp>
 #include <boost/beast/core/flat_buffer.hpp>
@@ -38,8 +38,8 @@ TEST_CASE_METHOD(ioc_fixture,
   fetchpp::ssl::context context(fetchpp::ssl::context::tlsv12_client);
   fetchpp::beast::ssl_stream<fetchpp::beast::tcp_stream> stream(ioc, context);
   fetchpp::beast::flat_buffer buffer;
-  auto const url = fetchpp::url::parse("/get"_https);
-  fetchpp::request<fetchpp::http::empty_body> request(
+  auto const url = fetchpp::http::url::parse("/get"_https);
+  fetchpp::http::request<fetchpp::http::empty_body> request(
       fetchpp::http::verb::get, url, fetchpp::options{});
   fetchpp::beast::http::response<fetchpp::http::string_body> response;
 
@@ -49,7 +49,8 @@ TEST_CASE_METHOD(ioc_fixture,
       stream, request, response, buffer, boost::asio::use_future);
   fut.get();
   REQUIRE(response.result_int() == 200);
-  REQUIRE(response.at(fetchpp::field::content_type) == "application/json");
+  REQUIRE(response.at(fetchpp::http::field::content_type) ==
+          "application/json");
 }
 
 TEST_CASE_METHOD(ioc_fixture,
@@ -59,10 +60,10 @@ TEST_CASE_METHOD(ioc_fixture,
   fetchpp::ssl::context context(fetchpp::ssl::context::tlsv12_client);
   fetchpp::beast::ssl_stream<fetchpp::beast::tcp_stream> stream(ioc, context);
   fetchpp::beast::flat_buffer buffer;
-  auto const url = fetchpp::url::parse("/get"_https);
-  fetchpp::request<fetchpp::http::empty_body> request(
+  auto const url = fetchpp::http::url::parse("/get"_https);
+  fetchpp::http::request<fetchpp::http::empty_body> request(
       fetchpp::http::verb::get, url, fetchpp::options{});
-  fetchpp::response response;
+  fetchpp::http::response response;
 
   http_ssl_connect(ioc, stream, url);
 
@@ -70,7 +71,8 @@ TEST_CASE_METHOD(ioc_fixture,
       stream, request, response, buffer, boost::asio::use_future);
   fut.get();
   REQUIRE(response.result_int() == 200);
-  REQUIRE(response.at(fetchpp::field::content_type) == "application/json");
+  REQUIRE(response.at(fetchpp::http::field::content_type) ==
+          "application/json");
   REQUIRE(response.is_json());
   REQUIRE_NOTHROW(response.json());
 }
@@ -81,12 +83,12 @@ TEST_CASE_METHOD(ioc_fixture, "connect", "[https][connect][async]")
   fetchpp::beast::ssl_stream<fetchpp::beast::tcp_stream> stream(ioc, context);
   fetchpp::beast::flat_buffer buffer;
 
-  auto const url = fetchpp::url::parse("/get"_https);
-  auto request =
-      make_request(fetchpp::http::verb::get, url, fetchpp::options{});
-  request.set(fetchpp::field::host, std::string{get_test_host()});
-  request.set(fetchpp::field::user_agent, fetchpp::USER_AGENT);
-  fetchpp::response response;
+  auto const url = fetchpp::http::url::parse("/get"_https);
+  auto request = fetchpp::http::make_request(
+      fetchpp::http::verb::get, url, fetchpp::options{});
+  request.set(fetchpp::http::field::host, std::string{get_test_host()});
+  request.set(fetchpp::http::field::user_agent, fetchpp::USER_AGENT);
+  fetchpp::http::response response;
 
   auto results = http_resolve_domain(ioc, url);
   auto fut = fetchpp::async_connect(
@@ -97,7 +99,8 @@ TEST_CASE_METHOD(ioc_fixture, "connect", "[https][connect][async]")
       stream, request, response, buffer, boost::asio::use_future);
   fut2.get();
   REQUIRE(response.result_int() == 200);
-  REQUIRE(response.at(fetchpp::field::content_type) == "application/json");
+  REQUIRE(response.at(fetchpp::http::field::content_type) ==
+          "application/json");
 }
 
 TEST_CASE_METHOD(ioc_fixture,
@@ -109,12 +112,12 @@ TEST_CASE_METHOD(ioc_fixture,
   fetchpp::beast::flat_buffer buffer;
 
   auto data = std::string("my dearest data");
-  auto const url = fetchpp::url::parse("/anything"_https);
-  auto request =
-      fetchpp::make_request<fetchpp::request<fetchpp::http::span_body<char>>>(
-          fetchpp::http::verb::post, url, {}, boost::beast::span<char>(data));
-  request.set(fetchpp::field::content_type, "text/plain");
-  fetchpp::response response;
+  auto const url = fetchpp::http::url::parse("/anything"_https);
+  auto request = fetchpp::http::make_request<
+      fetchpp::http::request<fetchpp::http::span_body<char>>>(
+      fetchpp::http::verb::post, url, {}, boost::beast::span<char>(data));
+  request.set(fetchpp::http::field::content_type, "text/plain");
+  fetchpp::http::response response;
 
   auto results = http_resolve_domain(ioc, url);
   auto fut = fetchpp::async_connect(

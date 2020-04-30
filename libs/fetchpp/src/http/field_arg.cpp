@@ -1,8 +1,8 @@
-#include <fetchpp/field_arg.hpp>
+#include <fetchpp/core/field_arg.hpp>
 
 namespace fetchpp
 {
-field_arg::field_arg(fetchpp::field field, std::string value)
+field_arg::field_arg(http::field field, std::string value)
   : field(std::move(field)),
     field_name(to_string(field)),
     value(std::move(value))

@@ -1,4 +1,4 @@
-#include <fetchpp/json_body.hpp>
+#include <fetchpp/http/json_body.hpp>
 
 namespace fetchpp::http
 {

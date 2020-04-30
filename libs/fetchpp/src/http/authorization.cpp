@@ -1,6 +1,7 @@
-#include <fetchpp/authorization.hpp>
+#include <fetchpp/http/authorization.hpp>
 
 #include <boost/beast/core/detail/base64.hpp>
+
 #include <fetchpp/alias/beast.hpp>
 
 #include <ostream>

@@ -1,7 +1,7 @@
 #pragma once
 
-#include <fetchpp/content_type.hpp>
-#include <fetchpp/simple_response.hpp>
+#include <fetchpp/http/content_type.hpp>
+#include <fetchpp/http/simple_response.hpp>
 
 #include <boost/beast/http/vector_body.hpp>
 
@@ -12,9 +12,8 @@
 
 #include <optional>
 
-namespace fetchpp
+namespace fetchpp::http
 {
-
 class response : public simple_response<beast::http::vector_body<std::uint8_t>>
 {
 public:
@@ -26,7 +25,7 @@ public:
   response() = default;
 
   bool has_content_type() const;
-  fetchpp::content_type const& content_type() const;
+  http::content_type const& content_type() const;
 
   bool is_json() const;
   bool is_text() const;
@@ -37,6 +36,6 @@ public:
   content_t content() const;
 
 private:
-  mutable std::optional<fetchpp::content_type> _content_type;
+  mutable std::optional<http::content_type> _content_type;
 };
 }
