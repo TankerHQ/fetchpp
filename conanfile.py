@@ -15,7 +15,7 @@ class FetchppConan(ConanFile):
         "with_ssl": [True, False],
         "warn_as_error": [True, False]
     }
-    default_options = {"shared": False, "fPIC": False, "with_ssl": True, "warn_as_error": False}
+    default_options = {"shared": False, "fPIC": True, "with_ssl": True, "warn_as_error": False}
     generators = "cmake"
     exports_sources = "CMakeLists.txt", "libs/*"
     cmake = None
