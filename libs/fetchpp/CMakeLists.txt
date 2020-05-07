@@ -16,6 +16,7 @@ add_library(fetchpp
   include/fetchpp/core/cache_mode.hpp
   include/fetchpp/core/field_arg.hpp
   include/fetchpp/core/connect.hpp
+  include/fetchpp/core/transport_traits.hpp
   include/fetchpp/core/options.hpp
   include/fetchpp/core/process_one.hpp
   include/fetchpp/core/redirect_handling.hpp
@@ -38,6 +39,7 @@ add_library(fetchpp
   include/fetchpp/alias/tcp.hpp
 
   src/core/cache_mode.cpp
+  src/core/basic_transport.cpp
   src/http/detail/json_body.cpp
   src/http/detail/request.cpp
   src/http/authorization.cpp
