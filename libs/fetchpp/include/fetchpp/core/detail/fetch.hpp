@@ -68,7 +68,7 @@ struct fetch_composer : stable_async_t<AsyncStream, Response, CompletionToken>,
             net::ip::resolver_base::numeric_service,
             std::move(*this));
         FETCHPP_YIELD async_process_one(
-            data.stream, data.req, data.res, data.buffer, std::move(*this));
+            data.stream, data.buffer, data.req, data.res, std::move(*this));
       }
       this->complete_now(ec, std::move(std::exchange(data.res, Response{})));
     }

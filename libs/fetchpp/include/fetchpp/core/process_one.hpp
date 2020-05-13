@@ -71,15 +71,15 @@ struct process_one_composer
 };
 }
 
-template <typename CompletionToken,
-          typename AsyncStream,
+template <typename AsyncStream,
+          typename Buffer,
           typename Request,
           typename Response,
-          typename Buffer>
+          typename CompletionToken>
 auto async_process_one(AsyncStream& stream,
+                       Buffer& buffer,
                        Request& request,
                        Response& response,
-                       Buffer& buffer,
                        CompletionToken&& token) ->
     typename net::async_result<typename std::decay_t<CompletionToken>,
                                void(error_code)>::return_type
