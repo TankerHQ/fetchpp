@@ -38,10 +38,12 @@ add_library(fetchpp
   include/fetchpp/alias/http.hpp
   include/fetchpp/alias/net.hpp
   include/fetchpp/alias/tcp.hpp
+  include/fetchpp/alias/ssl.hpp
 
   src/core/cache_mode.cpp
   src/core/basic_transport.cpp
   src/core/session_work_queue.cpp
+  src/core/client.cpp
   src/http/detail/json_body.cpp
   src/http/detail/request.cpp
   src/http/authorization.cpp

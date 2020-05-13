@@ -15,18 +15,25 @@ add_executable(test_functional
 )
 target_link_libraries(test_functional test_helpers fetchpp CONAN_PKG::Catch2 CONAN_PKG::fmt CONAN_PKG::jsonformoderncpp)
 
-add_executable(test_session
-  test_session.cpp
-  main.cpp
-)
-target_link_libraries(test_session test_helpers fetchpp CONAN_PKG::Catch2 CONAN_PKG::fmt CONAN_PKG::jsonformoderncpp)
-
 add_executable(test_transport
   test_transport.cpp
   main.cpp
 )
 target_link_libraries(test_transport test_helpers fetchpp CONAN_PKG::Catch2 CONAN_PKG::fmt CONAN_PKG::jsonformoderncpp)
 
+add_executable(test_session
+  test_session.cpp
+  main.cpp
+)
+target_link_libraries(test_session test_helpers fetchpp CONAN_PKG::Catch2 CONAN_PKG::fmt CONAN_PKG::jsonformoderncpp)
+
+add_executable(test_client
+  test_client.cpp
+  main.cpp
+)
+target_link_libraries(test_client test_helpers fetchpp CONAN_PKG::Catch2 CONAN_PKG::fmt CONAN_PKG::jsonformoderncpp)
+
 add_test(NAME test_transport COMMAND test_transport)
 add_test(NAME test_session COMMAND test_session)
+add_test(NAME test_client COMMAND test_client)
 add_test(NAME test_functional COMMAND test_functional)
