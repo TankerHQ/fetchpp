@@ -27,7 +27,6 @@ using Response = fetchpp::beast::http::response<T>;
 template <typename T>
 using Request = fetchpp::http::request<T>;
 
-using StringResponse = Response<fetchpp::http::string_body>;
 using JsonResponse = Response<fetchpp::http::json_body>;
 
 using StringRequest = Request<fetchpp::http::string_body>;
@@ -43,13 +42,13 @@ auto EqualsHeader(nlohmann::json const& headers, std::string const& field)
 
 TEST_CASE_METHOD(ioc_fixture,
                  "async fetch beast::http::response headers",
-                 "[https][fetch][async]")
+                 "[https][fetch]")
 {
   auto request = make_request(fetchpp::http::verb::get,
                               fetchpp::http::url::parse("get"_https));
   request.set("X-Random-Header", "this is a cute value");
   auto response = fetchpp::async_fetch<JsonResponse>(
-                      ioc, std::move(request), boost::asio::use_future)
+                      ex, std::move(request), boost::asio::use_future)
                       .get();
   REQUIRE(response.result_int() == 200);
   auto const content_type = fetchpp::http::content_type::parse(
@@ -63,13 +62,49 @@ TEST_CASE_METHOD(ioc_fixture,
   CHECK_THAT(fetchpp::USER_AGENT, EqualsHeader(headers, "User-Agent"));
 }
 
-TEST_CASE_METHOD(ioc_fixture, "async fetch headers", "[https][fetch][async]")
+TEST_CASE_METHOD(ioc_fixture, "async fetch through https", "[https][fetch]")
+{
+  auto request = make_request(fetchpp::http::verb::get,
+                              fetchpp::http::url::parse("get"_https));
+  auto response =
+      fetchpp::async_fetch(ex, std::move(request), boost::asio::use_future)
+          .get();
+  REQUIRE(response.result_int() == 200);
+  auto const content_type = fetchpp::http::content_type::parse(
+      response.at(fetchpp::http::field::content_type));
+  REQUIRE(response.content_type().type() == "application/json");
+  auto const& jsonBody = response.json();
+  auto const& headers = jsonBody.at("headers");
+  CHECK_THAT("no-cache", EqualsHeader(headers, "Cache-Control"));
+  CHECK_THAT(fetchpp::USER_AGENT, EqualsHeader(headers, "User-Agent"));
+}
+
+TEST_CASE_METHOD(ioc_fixture, "async fetch through http", "[http][fetch]")
+{
+  auto request = make_request(fetchpp::http::verb::get,
+                              fetchpp::http::url::parse("get"_http));
+  auto response =
+      fetchpp::async_fetch(ex, std::move(request), boost::asio::use_future)
+          .get();
+  REQUIRE(response.result_int() == 200);
+  auto const content_type = fetchpp::http::content_type::parse(
+      response.at(fetchpp::http::field::content_type));
+  REQUIRE(response.content_type().type() == "application/json");
+  auto const& jsonBody = response.json();
+  auto const& headers = jsonBody.at("headers");
+  CHECK_THAT("no-cache", EqualsHeader(headers, "Cache-Control"));
+  CHECK_THAT(fetchpp::USER_AGENT, EqualsHeader(headers, "User-Agent"));
+}
+
+TEST_CASE_METHOD(ioc_fixture,
+                 "async fetch with custom headers",
+                 "[https][fetch]")
 {
   auto request = make_request(fetchpp::http::verb::get,
                               fetchpp::http::url::parse("get"_https));
   request.set("X-Random-Header", "this is a cute value");
   auto response =
-      fetchpp::async_fetch(ioc, std::move(request), boost::asio::use_future)
+      fetchpp::async_fetch(ex, std::move(request), boost::asio::use_future)
           .get();
   REQUIRE(response.result_int() == 200);
   auto const content_type = fetchpp::http::content_type::parse(
@@ -82,13 +117,13 @@ TEST_CASE_METHOD(ioc_fixture, "async fetch headers", "[https][fetch][async]")
   CHECK_THAT(fetchpp::USER_AGENT, EqualsHeader(headers, "User-Agent"));
 }
 
-TEST_CASE_METHOD(ioc_fixture, "async fetch", "[https][fetch][async]")
+TEST_CASE_METHOD(ioc_fixture, "async fetch", "[https][fetch]")
 {
   auto request = make_request(fetchpp::http::verb::get,
                               fetchpp::http::url::parse("get"_https));
   request.set("X-Random-Header", "this is a cute value");
   auto response =
-      fetchpp::async_fetch(ioc, std::move(request), boost::asio::use_future)
+      fetchpp::async_fetch(ex, std::move(request), boost::asio::use_future)
           .get();
   REQUIRE(response.result_int() == 200);
   REQUIRE(response.content_type().type() == "application/json");
@@ -133,7 +168,8 @@ TEST_CASE_METHOD(ioc_fixture,
                    fetchpp::http::url::parse("basic-auth/david/totopaf"_https));
   request.set(fetchpp::http::authorization::basic("david", "totopaf"));
   auto response =
-      fetchpp::async_fetch(ioc, std::move(request), boost::asio::use_future)
+      fetchpp::async_fetch(
+          ioc.get_executor(), std::move(request), boost::asio::use_future)
           .get();
 
   REQUIRE(response.result_int() == 200);
@@ -148,7 +184,8 @@ TEST_CASE_METHOD(ioc_fixture,
   request.set(
       fetchpp::http::authorization::bearer("this_is_a_bearer_token_probably"));
   auto response =
-      fetchpp::async_fetch(ioc, std::move(request), boost::asio::use_future)
+      fetchpp::async_fetch(
+          ioc.get_executor(), std::move(request), boost::asio::use_future)
           .get();
 
   REQUIRE(response.result_int() == 200);
@@ -156,7 +193,7 @@ TEST_CASE_METHOD(ioc_fixture,
 
 TEST_CASE_METHOD(ioc_fixture,
                  "async fetch with ssl context",
-                 "[https][fetch][get][async][verify_peer][!mayfail]")
+                 "[https][fetch][get][verify_peer][!mayfail]")
 {
   auto request = make_request(fetchpp::http::verb::get,
                               fetchpp::http::url::parse("get"_https));
@@ -169,7 +206,7 @@ TEST_CASE_METHOD(ioc_fixture,
   sslc.add_verify_path("/etc/ssl/private");
   sslc.set_verify_mode(context::verify_peer);
   auto response = fetchpp::async_fetch(
-                      ioc, sslc, std::move(request), boost::asio::use_future)
+                      ex, sslc, std::move(request), boost::asio::use_future)
                       .get();
   REQUIRE(response.result_int() == 200);
   REQUIRE(response.at(fetchpp::http::field::content_type) ==
@@ -180,13 +217,13 @@ TEST_CASE_METHOD(ioc_fixture,
                EqualsHeader(headers, "X-Random-Header"));
 }
 
-TEST_CASE_METHOD(ioc_fixture, "http async get", "[https][get][async]")
+TEST_CASE_METHOD(ioc_fixture, "http async get", "[https][get]")
 {
   auto response =
       fetchpp::async_get(
-          ioc,
+          ex,
           "get"_https,
-          fetchpp::http::headers{{"X-random-header", "this is a cute value"}},
+          fetchpp::http::headers{{"X-random-header", "this is a cute value "}},
           boost::asio::use_future)
           .get();
   REQUIRE(response.result_int() == 200);
@@ -197,11 +234,11 @@ TEST_CASE_METHOD(ioc_fixture, "http async get", "[https][get][async]")
                EqualsHeader(json.at("headers"), "X-Random-Header"));
 }
 
-TEST_CASE_METHOD(ioc_fixture, "async post string", "[https][post][async]")
+TEST_CASE_METHOD(ioc_fixture, "async post string", "[https][post]")
 {
   auto const data = std::string("this is my data");
   auto response = fetchpp::async_post<StringRequest>(
-                      ioc,
+                      ex,
                       "post"_https,
                       std::move(data),
                       fetchpp::http::headers{{"X-corp-header", "corp value"}},
@@ -215,10 +252,10 @@ TEST_CASE_METHOD(ioc_fixture, "async post string", "[https][post][async]")
   REQUIRE(json.at("data") == data);
 }
 
-TEST_CASE_METHOD(ioc_fixture, "async post json", "[https][post][json][async]")
+TEST_CASE_METHOD(ioc_fixture, "async post json", "[https][post][json]")
 {
   auto response = fetchpp::async_post<JsonRequest>(
-                      ioc,
+                      ex,
                       "post"_https,
                       {{{"a key", "a value"}}},
                       fetchpp::http::headers{{"X-corp-header", "corp value"}},
