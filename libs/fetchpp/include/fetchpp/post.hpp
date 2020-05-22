@@ -7,7 +7,7 @@
 namespace fetchpp
 {
 template <typename Request, typename GetHandler>
-auto async_post(net::io_context& ioc,
+auto async_post(net::executor ex,
                 std::string const& url_str,
                 typename Request::body_type::value_type data,
                 http::headers fields,
@@ -17,6 +17,6 @@ auto async_post(net::io_context& ioc,
       http::verb::post, http::url::parse(url_str), {}, std::move(data));
   for (auto const& field : fields)
     request.insert(field.field, field.field_name, field.value);
-  return async_fetch(ioc, std::move(request), handler);
+  return async_fetch(ex, std::move(request), handler);
 }
 }
