@@ -44,6 +44,7 @@ add_library(fetchpp
   src/core/basic_transport.cpp
   src/core/session_work_queue.cpp
   src/core/client.cpp
+  src/core/fetch.cpp
   src/http/detail/json_body.cpp
   src/http/detail/request.cpp
   src/http/authorization.cpp
