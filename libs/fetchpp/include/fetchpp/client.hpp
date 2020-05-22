@@ -27,7 +27,6 @@ namespace fetchpp
 {
 namespace detail
 {
-bool is_ssl_involved(http::url const& uri);
 
 template <typename Client, typename Request, typename Response>
 struct client_fetch_data

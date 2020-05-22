@@ -101,6 +101,18 @@ void url::target(std::string_view target)
   _target = target;
 }
 
+bool url::is_ssl_involved() const
+{
+  if (!scheme().empty())
+  {
+    if (scheme() == "https")
+      return true;
+  }
+  else if (port() == 443)
+    return true;
+  return false;
+}
+
 namespace http_literals
 {
 url operator""_https(const char* target, std::size_t)

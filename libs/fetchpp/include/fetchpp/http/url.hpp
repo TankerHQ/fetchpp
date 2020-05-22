@@ -23,6 +23,7 @@ public:
   void domain(std::string_view);
   void port(uint16_t);
   void target(std::string_view);
+  bool is_ssl_involved() const;
 
 private:
   std::string _scheme;
