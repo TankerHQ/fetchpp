@@ -72,8 +72,7 @@ auto run_execute(AsyncTransport& transport,
 template <typename Transport,
           typename Queue,
           typename Request,
-          typename Response,
-          typename Handler>
+          typename Response>
 struct process_queue_op
 {
   Transport& transport;
@@ -106,7 +105,7 @@ auto process_queue(Transport& transport,
                    Handler&& handler)
 {
   return net::async_compose<Handler, void(error_code)>(
-      detail::process_queue_op<Transport, Queue, Request, Response, Handler>{
+      detail::process_queue_op<Transport, Queue, Request, Response>{
           transport, queue, request, response},
       handler,
       transport);
