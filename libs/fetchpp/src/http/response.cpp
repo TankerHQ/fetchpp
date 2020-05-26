@@ -43,7 +43,7 @@ bool response::is_content() const
   if (!has_content_type())
     return false;
   if (auto const ct = content_type();
-      ct.type() == "applicatioj/octet-stream" || (!is_json() && !is_text()))
+      ct.type() == "application/octet-stream" || (!is_json() && !is_text()))
     return true;
   return false;
 }

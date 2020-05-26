@@ -46,7 +46,7 @@ TEST_CASE_METHOD(ioc_fixture,
   http_ssl_connect(ioc, stream, url);
 
   auto fut = fetchpp::async_process_one(
-      stream, request, response, buffer, boost::asio::use_future);
+      stream, buffer, request, response, boost::asio::use_future);
   fut.get();
   REQUIRE(response.result_int() == 200);
   REQUIRE(response.at(fetchpp::http::field::content_type) ==
@@ -68,7 +68,7 @@ TEST_CASE_METHOD(ioc_fixture,
   http_ssl_connect(ioc, stream, url);
 
   auto fut = fetchpp::async_process_one(
-      stream, request, response, buffer, boost::asio::use_future);
+      stream, buffer, request, response, boost::asio::use_future);
   fut.get();
   REQUIRE(response.result_int() == 200);
   REQUIRE(response.at(fetchpp::http::field::content_type) ==
@@ -96,7 +96,7 @@ TEST_CASE_METHOD(ioc_fixture, "connect", "[https][connect][async]")
   fut.get();
 
   auto fut2 = fetchpp::async_process_one(
-      stream, request, response, buffer, boost::asio::use_future);
+      stream, buffer, request, response, boost::asio::use_future);
   fut2.get();
   REQUIRE(response.result_int() == 200);
   REQUIRE(response.at(fetchpp::http::field::content_type) ==
@@ -125,7 +125,7 @@ TEST_CASE_METHOD(ioc_fixture,
   fut.get();
 
   auto fut2 = fetchpp::async_process_one(
-      stream, request, response, buffer, boost::asio::use_future);
+      stream, buffer, request, response, boost::asio::use_future);
   fut2.get();
   REQUIRE(response.result_int() == 200);
   REQUIRE(response.content_type().type() == "application/json");

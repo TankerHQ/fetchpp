@@ -13,12 +13,14 @@ namespace test::helpers
 struct ioc_fixture
 {
   fetchpp::net::io_context ioc;
+  fetchpp::net::executor ex;
 
-  using work_guard = fetchpp::net::executor_work_guard<
-      fetchpp::net::io_context::executor_type>;
+  using work_guard = fetchpp::net::executor_work_guard<fetchpp::net::executor>;
 
   ioc_fixture()
-    : work(fetchpp::net::make_work_guard(ioc)), worker([this]() { ioc.run(); })
+    : ex(ioc.get_executor()),
+      work(fetchpp::net::make_work_guard(ex)),
+      worker([this]() { ioc.run(); })
   {
   }
   virtual ~ioc_fixture()

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <fetchpp/core/transport_traits.hpp>
+
 #include <fetchpp/core/detail/coroutine.hpp>
 
 #include <boost/asio/compose.hpp>
@@ -71,15 +73,15 @@ struct process_one_composer
 };
 }
 
-template <typename CompletionToken,
-          typename AsyncStream,
+template <typename AsyncStream,
+          typename Buffer,
           typename Request,
           typename Response,
-          typename Buffer>
+          typename CompletionToken>
 auto async_process_one(AsyncStream& stream,
+                       Buffer& buffer,
                        Request& request,
                        Response& response,
-                       Buffer& buffer,
                        CompletionToken&& token) ->
     typename net::async_result<typename std::decay_t<CompletionToken>,
                                void(error_code)>::return_type
@@ -95,5 +97,26 @@ auto async_process_one(AsyncStream& stream,
           stream, request, response, buffer},
       token,
       stream);
+}
+
+template <typename AsyncTransport,
+          typename Request,
+          typename Response,
+          typename CompletionToken>
+auto async_process_one(AsyncTransport& transport,
+                       Request& request,
+                       Response& response,
+                       CompletionToken&& token) ->
+    typename net::async_result<typename std::decay_t<CompletionToken>,
+                               void(error_code)>::return_type
+
+{
+  static_assert(is_async_transport<AsyncTransport>::value,
+                "AsyncTransport type requirements not met");
+  return async_process_one(transport.next_layer(),
+                           transport.buffer(),
+                           request,
+                           response,
+                           std::forward<CompletionToken>(token));
 }
 }

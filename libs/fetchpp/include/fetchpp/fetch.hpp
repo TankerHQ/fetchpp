@@ -13,7 +13,7 @@
 namespace fetchpp
 {
 template <typename Response, typename Request, typename CompletionToken>
-auto async_fetch(net::io_context& ioc,
+auto async_fetch(net::executor ex,
                  net::ssl::context& sslc,
                  Request request,
                  CompletionToken&& token)
@@ -24,27 +24,26 @@ auto async_fetch(net::io_context& ioc,
   static_assert(Response::is_request::value == false,
                 "Response type is not valid");
 
-  return detail::async_fetch_impl<Response, Request, CompletionToken>(
-      ioc, sslc, std::move(request), token);
+  return detail::async_fetch<Response, Request, CompletionToken>(
+      ex, sslc, std::move(request), std::move(token));
 }
 
 template <typename Response, typename Request, typename CompletionToken>
-auto async_fetch(net::io_context& ioc, Request request, CompletionToken&& token)
+auto async_fetch(net::executor ex, Request request, CompletionToken&& token)
     -> detail::async_http_return_type_t<CompletionToken, Response>
 {
   static_assert(Request::is_request::value == true,
                 "Request type is not valid");
   static_assert(Response::is_request::value == false,
                 "Response type is not valid");
-  return net::async_compose<CompletionToken, void(error_code, Response)>(
-      detail::fetch_composer_with_ssl<Request, Response>{ioc,
-                                                         std::move(request)},
-      token,
-      ioc);
+  return detail::async_fetch<Response, Request, CompletionToken>(
+      ex, std::move(request), std::move(token));
 }
 
+/// Use fetchpp::http::response
+
 template <typename Request, typename CompletionToken>
-auto async_fetch(net::io_context& ioc,
+auto async_fetch(net::executor ex,
                  net::ssl::context& sslc,
                  Request request,
                  CompletionToken&& token)
@@ -52,16 +51,16 @@ auto async_fetch(net::io_context& ioc,
 {
   static_assert(Request::is_request::value == true,
                 "Request type is not valid");
-  return async_fetch<http::response>(ioc, sslc, std::move(request), token);
+  return async_fetch<http::response>(ex, sslc, std::move(request), token);
 }
 
 template <typename Request, typename CompletionToken>
-auto async_fetch(net::io_context& ioc, Request request, CompletionToken&& token)
+auto async_fetch(net::executor ex, Request request, CompletionToken&& token)
     -> detail::async_http_return_type_t<CompletionToken, http::response>
 {
   static_assert(Request::is_request::value == true,
                 "Request type is not valid");
-  return async_fetch<http::response>(ioc, std::move(request), token);
+  return async_fetch<http::response>(ex, std::move(request), token);
 }
 
 }
