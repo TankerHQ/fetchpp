@@ -2,6 +2,7 @@
 
 #include <fetchpp/core/basic_transport.hpp>
 #include <fetchpp/core/detail/coroutine.hpp>
+#include <fetchpp/core/endpoint.hpp>
 
 #include <boost/asio/compose.hpp>
 #include <boost/beast/core/error.hpp>
@@ -20,12 +21,15 @@ namespace detail
 template <typename AsyncTransport>
 struct async_ssl_connect_op
 {
+  base_endpoint& endpoint;
   AsyncTransport& transport;
   tcp::resolver resolver;
   net::coroutine coro_;
 
-  async_ssl_connect_op(AsyncTransport& transport)
-    : transport(transport), resolver(transport.get_executor())
+  async_ssl_connect_op(base_endpoint& endpoint, AsyncTransport& transport)
+    : endpoint(endpoint),
+      transport(transport),
+      resolver(transport.get_executor())
   {
   }
 
@@ -42,13 +46,13 @@ struct async_ssl_connect_op
     FETCHPP_REENTER(coro_)
     {
       FETCHPP_YIELD resolver.async_resolve(
-          transport.domain(),
-          std::to_string(transport.port()),
+          endpoint.domain(),
+          std::to_string(endpoint.port()),
           net::ip::resolver_base::numeric_service,
           std::move(self));
       // https://www.cloudflare.com/learning/ssl/what-is-sni/
       if (!SSL_set_tlsext_host_name(transport.next_layer().native_handle(),
-                                    transport.domain().data()))
+                                    endpoint.domain().data()))
         return self.complete(error_code{static_cast<int>(::ERR_get_error()),
                                         net::error::get_ssl_category()});
 
@@ -108,12 +112,13 @@ async_ssl_close_op(AsyncStream&)->async_ssl_close_op<AsyncStream>;
 }
 
 template <typename NextLayer, typename DynamicBuffer, typename CompletionToken>
-auto async_connect(
+auto do_async_connect(
+    detail::base_endpoint& endpoint,
     basic_async_transport<beast::ssl_stream<NextLayer>, DynamicBuffer>& ts,
     CompletionToken&& token)
 {
   return net::async_compose<CompletionToken, void(error_code)>(
-      detail::async_ssl_connect_op{ts}, token, ts);
+      detail::async_ssl_connect_op{endpoint, ts}, token, ts);
 }
 
 template <typename NextLayer, typename DynamicBuffer, typename CompletionToken>
@@ -128,4 +133,5 @@ auto async_close(
 using ssl_async_transport =
     basic_async_transport<beast::ssl_stream<beast::tcp_stream>,
                           beast::multi_buffer>;
+
 }

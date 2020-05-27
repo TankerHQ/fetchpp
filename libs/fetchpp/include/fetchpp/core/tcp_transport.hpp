@@ -1,6 +1,7 @@
 #pragma once
 
 #include <fetchpp/core/basic_transport.hpp>
+#include <fetchpp/core/endpoint.hpp>
 
 #include <boost/asio/compose.hpp>
 #include <boost/beast/core/tcp_stream.hpp>
@@ -15,12 +16,15 @@ namespace detail
 template <typename AsyncTransport>
 struct async_connect_op
 {
+  base_endpoint& endpoint;
   AsyncTransport& transport;
   tcp::resolver resolver;
   net::coroutine coro_;
 
-  async_connect_op(AsyncTransport& transport)
-    : transport(transport), resolver(transport.get_executor())
+  async_connect_op(base_endpoint& endpoint, AsyncTransport& transport)
+    : endpoint(endpoint),
+      transport(transport),
+      resolver(transport.get_executor())
   {
   }
 
@@ -37,8 +41,8 @@ struct async_connect_op
     FETCHPP_REENTER(coro_)
     {
       FETCHPP_YIELD resolver.async_resolve(
-          transport.domain(),
-          std::to_string(transport.port()),
+          endpoint.domain(),
+          std::to_string(endpoint.port()),
           net::ip::resolver_base::numeric_service,
           std::move(self));
       FETCHPP_YIELD beast::get_lowest_layer(transport).async_connect(
@@ -60,13 +64,15 @@ template <typename Executor,
           typename RatePolicy,
           typename DynamicBuffer,
           typename CompletionToken>
-auto async_connect(basic_async_transport<
-                       beast::basic_stream<net::ip::tcp, Executor, RatePolicy>,
-                       DynamicBuffer>& ts,
-                   CompletionToken&& token)
+auto do_async_connect(
+    detail::base_endpoint& endpoint,
+    basic_async_transport<
+        beast::basic_stream<net::ip::tcp, Executor, RatePolicy>,
+        DynamicBuffer>& ts,
+    CompletionToken&& token)
 {
   return net::async_compose<CompletionToken, void(error_code)>(
-      detail::async_connect_op{ts}, token, ts);
+      detail::async_connect_op{endpoint, ts}, token, ts);
 }
 
 template <typename Executor,
