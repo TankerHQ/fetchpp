@@ -156,7 +156,7 @@ auto async_fetch(net::executor ex, Request request, CompletionToken&& token)
     return async_fetch_impl<tcp_async_transport, Response>(
         tcp_async_transport(std::move(domain), port, ex),
         std::move(request),
-        std::move(token));
+        std::forward<CompletionToken>(token));
   }
 }
 

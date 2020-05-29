@@ -41,8 +41,28 @@ auto EqualsHeader(nlohmann::json const& headers, std::string const& field)
 }
 
 TEST_CASE_METHOD(ioc_fixture,
-                 "async fetch beast::http::response headers",
-                 "[https][fetch]")
+                 "async fetch headers with lambda",
+                 "[https][fetch][lambda]")
+{
+  auto request = make_request(fetchpp::http::verb::get,
+                              fetchpp::http::url::parse("get"_https));
+  request.set("x-random-header", "this is a cute value");
+  fetchpp::async_fetch<JsonResponse>(
+      ex, std::move(request), [](auto err, auto response) {
+        REQUIRE(!err);
+        REQUIRE(response.result_int() == 200);
+        REQUIRE(response.at(fetchpp::http::field::content_type) ==
+                "application/json");
+        auto const& jsonbody = response.body();
+        auto const& headers = jsonbody.at("headers");
+        CHECK_THAT("this is a cute value",
+                   EqualsHeader(headers, "X-Random-Header"));
+        CHECK_THAT("no-cache", EqualsHeader(headers, "Cache-Control"));
+        CHECK_THAT(fetchpp::USER_AGENT, EqualsHeader(headers, "User-Agent"));
+      });
+}
+
+TEST_CASE_METHOD(ioc_fixture, "async fetch headers", "[https][fetch]")
 {
   auto request = make_request(fetchpp::http::verb::get,
                               fetchpp::http::url::parse("get"_https));
@@ -51,12 +71,50 @@ TEST_CASE_METHOD(ioc_fixture,
                       ex, std::move(request), boost::asio::use_future)
                       .get();
   REQUIRE(response.result_int() == 200);
-  auto const content_type = fetchpp::http::content_type::parse(
-      response.at(fetchpp::http::field::content_type));
   REQUIRE(response.at(fetchpp::http::field::content_type) ==
           "application/json");
-  auto const& jsonBody = response.body();
-  auto const& headers = jsonBody.at("headers");
+  auto const& jsonbody = response.body();
+  auto const& headers = jsonbody.at("headers");
+  CHECK_THAT("this is a cute value", EqualsHeader(headers, "X-Random-Header"));
+  CHECK_THAT("no-cache", EqualsHeader(headers, "Cache-Control"));
+  CHECK_THAT(fetchpp::USER_AGENT, EqualsHeader(headers, "User-Agent"));
+}
+
+TEST_CASE_METHOD(ioc_fixture,
+                 "async fetch beast::http::response headers with lambda",
+                 "[https][fetch][lambda]")
+{
+  auto request = make_request(fetchpp::http::verb::get,
+                              fetchpp::http::url::parse("get"_https));
+  request.set("X-Random-Header", "this is a cute value");
+  fetchpp::async_fetch(ex, std::move(request), [](auto err, auto response) {
+    REQUIRE(!err);
+    REQUIRE(response.result_int() == 200);
+    REQUIRE(response.is_json());
+    REQUIRE_NOTHROW(response.json());
+    auto const& jsonbody = response.json();
+    auto const& headers = jsonbody.at("headers");
+    CHECK_THAT("this is a cute value",
+               EqualsHeader(headers, "X-Random-Header"));
+    CHECK_THAT("no-cache", EqualsHeader(headers, "Cache-Control"));
+    CHECK_THAT(fetchpp::USER_AGENT, EqualsHeader(headers, "User-Agent"));
+  });
+}
+
+TEST_CASE_METHOD(ioc_fixture,
+                 "async fetch beast::http::response headers",
+                 "[https][fetch]")
+{
+  auto request = make_request(fetchpp::http::verb::get,
+                              fetchpp::http::url::parse("get"_https));
+  request.set("x-random-header", "this is a cute value");
+  auto response =
+      fetchpp::async_fetch(ex, std::move(request), boost::asio::use_future)
+          .get();
+  REQUIRE(response.result_int() == 200);
+  REQUIRE(response.is_json());
+  auto const& jsonbody = response.json();
+  auto const& headers = jsonbody.at("headers");
   CHECK_THAT("this is a cute value", EqualsHeader(headers, "X-Random-Header"));
   CHECK_THAT("no-cache", EqualsHeader(headers, "Cache-Control"));
   CHECK_THAT(fetchpp::USER_AGENT, EqualsHeader(headers, "User-Agent"));
@@ -223,7 +281,7 @@ TEST_CASE_METHOD(ioc_fixture, "http async get", "[https][get]")
       fetchpp::async_get(
           ex,
           "get"_https,
-          fetchpp::http::headers{{"X-random-header", "this is a cute value "}},
+          fetchpp::http::headers{{"X-random-header", "this is a cute value"}},
           boost::asio::use_future)
           .get();
   REQUIRE(response.result_int() == 200);
@@ -234,6 +292,25 @@ TEST_CASE_METHOD(ioc_fixture, "http async get", "[https][get]")
                EqualsHeader(json.at("headers"), "X-Random-Header"));
 }
 
+TEST_CASE_METHOD(ioc_fixture,
+                 "http async get with lambda",
+                 "[https][get][lambda]")
+{
+  fetchpp::async_get(
+      ex,
+      "get"_https,
+      fetchpp::http::headers{{"X-random-header", "this is a cute value"}},
+      [](auto err, fetchpp::http::response response) {
+        REQUIRE(!err);
+        REQUIRE(response.result_int() == 200);
+        REQUIRE(response.content_type().type() == "application/json");
+        auto const json = response.json();
+        auto ct = std::string{to_string(fetchpp::http::field::content_type)};
+        REQUIRE_THAT("this is a cute value",
+                     EqualsHeader(json.at("headers"), "X-Random-Header"));
+      });
+}
+
 TEST_CASE_METHOD(ioc_fixture, "async post string", "[https][post]")
 {
   auto const data = std::string("this is my data");
@@ -241,7 +318,7 @@ TEST_CASE_METHOD(ioc_fixture, "async post string", "[https][post]")
                       ex,
                       "post"_https,
                       std::move(data),
-                      fetchpp::http::headers{{"X-corp-header", "corp value"}},
+                      fetchpp::http::headers{{"X-corp-header", "corp value "}},
                       boost::asio::use_future)
                       .get();
   REQUIRE(response.result_int() == 200);
@@ -258,7 +335,7 @@ TEST_CASE_METHOD(ioc_fixture, "async post json", "[https][post][json]")
                       ex,
                       "post"_https,
                       {{{"a key", "a value"}}},
-                      fetchpp::http::headers{{"X-corp-header", "corp value"}},
+                      fetchpp::http::headers{{"X-corp-header", "corp value "}},
                       boost::asio::use_future)
                       .get();
   REQUIRE(response.result_int() == 200);
