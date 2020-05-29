@@ -46,6 +46,8 @@ def main() -> None:
 
     if args.command == "build-and-test":
         build_and_test(args.profile, args.coverage)
+    elif args.command == "mirror":
+        ci.git.mirror(github_url="git@github.com:TankerHQ/fetchpp", force=True)
     elif args.command == "deploy":
         deploy()
 
