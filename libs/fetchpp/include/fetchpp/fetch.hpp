@@ -51,7 +51,8 @@ auto async_fetch(net::executor ex,
 {
   static_assert(Request::is_request::value == true,
                 "Request type is not valid");
-  return async_fetch<http::response>(ex, sslc, std::move(request), token);
+  return async_fetch<http::response>(
+      ex, sslc, std::move(request), std::move(token));
 }
 
 template <typename Request, typename CompletionToken>
@@ -60,7 +61,7 @@ auto async_fetch(net::executor ex, Request request, CompletionToken&& token)
 {
   static_assert(Request::is_request::value == true,
                 "Request type is not valid");
-  return async_fetch<http::response>(ex, std::move(request), token);
+  return async_fetch<http::response>(ex, std::move(request), std::move(token));
 }
 
 }
