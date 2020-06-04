@@ -39,7 +39,8 @@ TEST_CASE_METHOD(ioc_fixture,
   ssl::context context(ssl::context::tlsv12_client);
   auto url = fetchpp::http::url::parse("https://127.0.0.2:444");
   auto session =
-      fetchpp::session(url.domain(), url.port(), AsyncStream(ioc, context));
+      fetchpp::session(fetchpp::secure_endpoint(url.domain(), url.port()),
+                       AsyncStream(ioc, context));
   auto request = fetchpp::http::make_request(fetchpp::http::verb::get, url);
   fetchpp::http::response response;
   REQUIRE_THROWS_MATCHES(
@@ -57,7 +58,8 @@ TEST_CASE_METHOD(
   ssl::context context(ssl::context::tlsv12_client);
   auto const url = fetchpp::http::url::parse("get"_https);
   auto session =
-      fetchpp::session(url.domain(), url.port(), AsyncStream(ioc, context));
+      fetchpp::session(fetchpp::secure_endpoint(url.domain(), url.port()),
+                       AsyncStream(ioc, context));
   REQUIRE_NOTHROW(session.async_start(boost::asio::use_future).get());
 
   auto request = fetchpp::http::make_request(
@@ -76,7 +78,8 @@ TEST_CASE_METHOD(ioc_fixture,
   ssl::context context(ssl::context::tlsv12_client);
   auto const url = fetchpp::http::url::parse("get"_https);
   auto session =
-      fetchpp::session(url.domain(), url.port(), AsyncStream(ioc, context));
+      fetchpp::session(fetchpp::secure_endpoint(url.domain(), url.port()),
+                       AsyncStream(ioc, context));
   auto request = fetchpp::http::make_request(
       fetchpp::http::verb::get, fetchpp::http::url::parse("get"_https));
   {
@@ -99,7 +102,8 @@ TEST_CASE("session executes multiple requests pushed", "[session][push]")
   ssl::context context(ssl::context::tlsv12_client);
   auto const url = fetchpp::http::url::parse("get"_https);
   auto session =
-      fetchpp::session(url.domain(), url.port(), AsyncStream(ioc, context));
+      fetchpp::session(fetchpp::secure_endpoint(url.domain(), url.port()),
+                       AsyncStream(ioc, context));
   auto request = fetchpp::http::make_request(
       fetchpp::http::verb::get, fetchpp::http::url::parse("get"_https));
   auto request2 = fetchpp::http::make_request<

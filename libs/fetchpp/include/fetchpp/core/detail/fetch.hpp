@@ -21,20 +21,28 @@
 
 namespace fetchpp::detail
 {
-template <typename AsyncTransport, typename Request, typename Response>
+template <typename Endpoint,
+          typename AsyncTransport,
+          typename Request,
+          typename Response>
 struct fetch_temporary_data
 {
   Request req;
-  session<AsyncTransport> sess;
+  session<Endpoint, AsyncTransport> sess;
   Response res;
 
-  fetch_temporary_data(Request&& preq, AsyncTransport&& transport)
-    : req(std::move(preq)), sess(std::move(transport)), res()
+  fetch_temporary_data(Endpoint&& endpoint,
+                       Request&& preq,
+                       AsyncTransport&& transport)
+    : req(std::move(preq)),
+      sess(std::move(endpoint), std::move(transport)),
+      res()
   {
   }
 };
 
-template <typename AsyncTransport,
+template <typename Endpoint,
+          typename AsyncTransport,
           typename Request,
           typename Response,
           typename CompletionHandler>
@@ -42,17 +50,19 @@ struct fetch_op : stable_async_t<AsyncTransport, CompletionHandler>
 {
   using base_t = stable_async_t<AsyncTransport, CompletionHandler>;
 
-  using temp_data_t = fetch_temporary_data<AsyncTransport, Request, Response>;
+  using temp_data_t =
+      fetch_temporary_data<Endpoint, AsyncTransport, Request, Response>;
   temp_data_t& data;
 
   net::coroutine coro_;
 
-  fetch_op(AsyncTransport&& transport,
+  fetch_op(Endpoint&& endpoint,
+           AsyncTransport&& transport,
            Request&& req,
            CompletionHandler&& handler)
     : base_t(std::move(handler), transport.get_executor()),
       data(beast::allocate_stable<temp_data_t>(
-          *this, std::move(req), std::move(transport)))
+          *this, std::move(endpoint), std::move(req), std::move(transport)))
   {
     (*this)();
   }
@@ -70,11 +80,13 @@ struct fetch_op : stable_async_t<AsyncTransport, CompletionHandler>
   }
 };
 
-template <typename AsyncTransport,
+template <typename Endpoint,
+          typename AsyncTransport,
           typename Response,
           typename Request,
           typename CompletionToken>
-auto async_fetch_impl(AsyncTransport&& transport,
+auto async_fetch_impl(Endpoint&& endpoint,
+                      AsyncTransport&& transport,
                       Request request,
                       CompletionToken&& token)
     -> detail::async_http_return_type_t<CompletionToken, Response>
@@ -84,10 +96,12 @@ auto async_fetch_impl(AsyncTransport&& transport,
 
   async_completion_t async_comp{token};
   request.keep_alive(false);
-  detail::fetch_op<AsyncTransport,
+  detail::fetch_op<Endpoint,
+                   AsyncTransport,
                    Request,
                    Response,
                    typename async_completion_t::completion_handler_type>(
+      std::move(endpoint),
       std::move(transport),
       std::move(request),
       std::move(async_comp.completion_handler));
@@ -97,8 +111,6 @@ auto async_fetch_impl(AsyncTransport&& transport,
 template <typename Request, typename Response>
 struct fetch_composer_with_ssl
 {
-  std::string domain;
-  uint16_t port;
   Request request;
   net::executor ex;
   net::ssl::context sslc = net::ssl::context{net::ssl::context::tls_client};
@@ -107,9 +119,11 @@ struct fetch_composer_with_ssl
   void operator()(Self& self)
   {
     // sslc.set_verify_mode(context::verify_peer);
-    auto const uri = request.uri();
-    async_fetch_impl<ssl_async_transport, Response>(
-        ssl_async_transport(uri.domain(), uri.port(), ex, sslc),
+    auto endpoint =
+        secure_endpoint(request.uri().domain(), request.uri().port());
+    async_fetch_impl<secure_endpoint, ssl_async_transport, Response>(
+        std::move(endpoint),
+        ssl_async_transport(ex, sslc),
         std::move(request),
         std::move(self));
   }
@@ -128,10 +142,10 @@ auto async_fetch(net::executor ex,
                  CompletionToken&& token)
     -> detail::async_http_return_type_t<CompletionToken, Response>
 {
-  auto domain = request.uri().domain();
-  auto port = request.uri().port();
-  return async_fetch_impl<ssl_async_transport, Response>(
-      ssl_async_transport(std::move(domain), port, ex, sslc),
+  auto endpoint = secure_endpoint(request.uri().domain(), request.uri().port());
+  return async_fetch_impl<secure_endpoint, ssl_async_transport, Response>(
+      std::move(endpoint),
+      ssl_async_transport(ex, sslc),
       std::move(request),
       std::move(token));
 }
@@ -140,24 +154,23 @@ template <typename Response, typename Request, typename CompletionToken>
 auto async_fetch(net::executor ex, Request request, CompletionToken&& token)
     -> detail::async_http_return_type_t<CompletionToken, Response>
 {
-  auto is_ssl = request.uri().is_ssl_involved();
   auto domain = request.uri().domain();
   auto port = request.uri().port();
-  if (is_ssl)
+  if (request.uri().is_ssl_involved())
   {
     return net::async_compose<CompletionToken, void(error_code, Response)>(
-        detail::fetch_composer_with_ssl<Request, Response>{
-            std::move(domain), port, std::move(request), ex},
+        detail::fetch_composer_with_ssl<Request, Response>{std::move(request),
+                                                           ex},
         token,
         ex);
   }
   else
   {
-    return async_fetch_impl<tcp_async_transport, Response>(
-        tcp_async_transport(std::move(domain), port, ex),
+    return async_fetch_impl<plain_endpoint, tcp_async_transport, Response>(
+        plain_endpoint(std::move(domain), port),
+        tcp_async_transport(ex),
         std::move(request),
         std::forward<CompletionToken>(token));
   }
 }
-
 }

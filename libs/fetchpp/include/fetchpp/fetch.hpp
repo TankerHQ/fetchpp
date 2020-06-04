@@ -12,6 +12,7 @@
 
 namespace fetchpp
 {
+
 template <typename Response, typename Request, typename CompletionToken>
 auto async_fetch(net::executor ex,
                  net::ssl::context& sslc,

@@ -60,13 +60,16 @@ struct client_fetch_op
       coro(),
       data(beast::allocate_stable<data_t>(*this, client, std::move(req)))
   {
+    if (auto const& uri = data.req.uri(); uri.is_ssl_involved())
+      start(secure_endpoint(uri.domain(), uri.port()));
+    else
+      start(plain_endpoint(uri.domain(), uri.port()));
   }
 
-  template <bool is_ssl_involved>
-  void start()
+  template <bool isSecure>
+  void start(basic_endpoint<isSecure> endpoint)
   {
-    auto& session =
-        data.client.template get_session<is_ssl_involved>(data.req.uri());
+    auto& session = data.client.get_session(std::move(endpoint));
     session.push_request(data.req, data.res, std::move(*this));
   }
 
@@ -96,36 +99,35 @@ public:
   }
 
 private:
-  template <typename AsyncTransport>
-  auto& get_session(std::string const& domain,
-                    std::uint16_t port,
-                    std::deque<session<AsyncTransport>>& sessions)
+  template <typename AsyncTransport, typename Endpoint>
+  auto& get_session(Endpoint endpoint,
+                    std::deque<session<Endpoint, AsyncTransport>>& sessions)
   {
     auto found = std::find_if(
         sessions.begin(), sessions.end(), [&](auto const& session) {
-          return session.domain() == domain && session.port() == port &&
+          return session.endpoint() == endpoint &&
                  session.pending_requests() < max_pending_per_session();
         });
     if (found == sessions.end())
     {
-      if constexpr (std::is_same_v<AsyncTransport, ssl_async_transport>)
+      if constexpr (Endpoint::is_secure::value)
         return sessions.emplace_back(
-            AsyncTransport(domain, port, this->strand_, this->context_));
+            std::move(endpoint), AsyncTransport(this->strand_, this->context_));
       else
-        return sessions.emplace_back(
-            AsyncTransport(domain, port, this->strand_));
+        return sessions.emplace_back(std::move(endpoint),
+                                     AsyncTransport(this->strand_));
     }
     return *found;
   }
 
 public:
-  template <bool is_ssl_involved>
-  auto& get_session(http::url const& url)
+  template <typename Endpoint>
+  auto& get_session(Endpoint endpoint)
   {
-    if constexpr (is_ssl_involved)
-      return this->get_session(url.domain(), url.port(), this->ssl_sessions_);
+    if constexpr (Endpoint::is_secure::value)
+      return this->get_session(std::move(endpoint), this->secure_sessions_);
     else
-      return this->get_session(url.domain(), url.port(), this->tcp_sessions_);
+      return this->get_session(std::move(endpoint), this->plain_sessions_);
   }
 
   template <typename Request, typename CompletionToken>
@@ -136,27 +138,22 @@ public:
     using handler_t = typename async_completion_t::completion_handler_type;
 
     async_completion_t async_comp{token};
-    bool is_ssl = request.uri().is_ssl_involved();
     auto op =
         detail::client_fetch_op<client, Request, http::response, handler_t>(
             *this,
             std::move(request),
             std::move(async_comp.completion_handler));
-    if (is_ssl)
-      op.template start<true>();
-    else
-      op.template start<false>();
     return async_comp.result.get();
   }
 
-  auto sessions() const
+  auto session_count() const
   {
-    return tcp_sessions_.size() + ssl_sessions_.size();
+    return plain_sessions_.size() + secure_sessions_.size();
   }
 
   executor_type strand_;
   net::ssl::context context_;
-  std::deque<session<tcp_async_transport>> tcp_sessions_;
-  std::deque<session<ssl_async_transport>> ssl_sessions_;
+  std::deque<session<plain_endpoint, tcp_async_transport>> plain_sessions_;
+  std::deque<session<secure_endpoint, ssl_async_transport>> secure_sessions_;
 };
 }

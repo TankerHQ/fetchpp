@@ -1,35 +1,17 @@
 #pragma once
 
+#include <fetchpp/core/endpoint.hpp>
+
 #include <boost/asio/buffer.hpp>
 #include <boost/beast/core/stream_traits.hpp>
 
 #include <fetchpp/alias/beast.hpp>
 #include <fetchpp/alias/net.hpp>
 
-#include <string>
-#include <string_view>
-
 namespace fetchpp
 {
-namespace detail
-{
-class basic_transport_base
-{
-public:
-  std::string const& domain() const;
-  std::uint16_t port() const;
-  std::string_view host() const;
-
-  basic_transport_base(std::string domain, std::uint16_t port);
-
-private:
-  std::string domain_;
-  std::uint16_t port_;
-};
-}
-
 template <typename AsyncStream, typename DynamicBuffer>
-class basic_async_transport : public detail::basic_transport_base
+class basic_async_transport
 {
   static_assert(beast::is_async_stream<AsyncStream>::value,
                 "AsyncStream type requirements not met");
@@ -43,20 +25,14 @@ public:
   using executor_type = typename next_layer_type::executor_type;
 
   template <typename... Args>
-  basic_async_transport(std::string domain,
-                        std::uint16_t port,
-                        DynamicBuffer buffer,
-                        Args&&... args)
-    : basic_transport_base(std::move(domain), port),
-      buffer_(std::move(buffer), stream_(std::forward<Args>(args)...))
+  basic_async_transport(DynamicBuffer buffer, Args&&... args)
+    : buffer_(std::move(buffer)), stream_(std::forward<Args>(args)...)
   {
   }
 
   template <typename... Args>
-  basic_async_transport(std::string domain, std::uint16_t port, Args&&... args)
-    : basic_transport_base(std::move(domain), port),
-      buffer_(buffer_type{}),
-      stream_(std::forward<Args>(args)...)
+  basic_async_transport(Args&&... args)
+    : basic_async_transport(buffer_type{}, std::forward<Args>(args)...)
   {
   }
 
@@ -74,6 +50,13 @@ public:
   {
     return next_layer().async_write_some(buffers,
                                          std::forward<WriteHandler>(handler));
+  }
+
+  template <typename CompletionToken>
+  auto async_connect(detail::base_endpoint& endpoint, CompletionToken&& token)
+  {
+    return do_async_connect(
+        endpoint, *this, std::forward<CompletionToken>(token));
   }
 
   next_layer_type& next_layer()

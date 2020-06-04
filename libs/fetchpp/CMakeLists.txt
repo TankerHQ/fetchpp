@@ -16,6 +16,7 @@ add_library(fetchpp
   include/fetchpp/core/detail/session_work_queue.hpp
   include/fetchpp/core/cache_mode.hpp
   include/fetchpp/core/field_arg.hpp
+  include/fetchpp/core/endpoint.hpp
   include/fetchpp/core/connect.hpp
   include/fetchpp/core/transport_traits.hpp
   include/fetchpp/core/options.hpp
@@ -41,7 +42,7 @@ add_library(fetchpp
   include/fetchpp/alias/ssl.hpp
 
   src/core/cache_mode.cpp
-  src/core/basic_transport.cpp
+  src/core/endpoint.cpp
   src/core/session_work_queue.cpp
   src/core/client.cpp
   src/core/fetch.cpp
