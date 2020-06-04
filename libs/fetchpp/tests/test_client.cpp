@@ -23,7 +23,7 @@ TEST_CASE_METHOD(ioc_fixture, "client one", "[client][http]")
   REQUIRE(res.result_int() == 200);
   auto res2 = cl.async_fetch(srequest, boost::asio::use_future).get();
   REQUIRE(res2.result_int() == 200);
-  REQUIRE(cl.sessions() == 2);
+  REQUIRE(cl.session_count() == 2);
   static_assert(fetchpp::net::is_executor<
                 typename fetchpp::client::executor_type>::value);
 }

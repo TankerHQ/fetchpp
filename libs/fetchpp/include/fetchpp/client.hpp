@@ -149,7 +149,7 @@ public:
     return async_comp.result.get();
   }
 
-  auto sessions() const
+  auto session_count() const
   {
     return tcp_sessions_.size() + ssl_sessions_.size();
   }
