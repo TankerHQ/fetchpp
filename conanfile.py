@@ -27,13 +27,14 @@ class FetchppConan(ConanFile):
 
 
     def requirements(self):
-        self.requires("Boost/1.71.0@tanker/testing")
-        self.requires("jsonformoderncpp/3.4.0@tanker/testing")
+        self.requires("libressl/3.2.0")
+        self.requires("boost/1.71.0")
+        self.requires("nlohmann_json/3.8.0")
 
 
     def build_requirements(self):
-        self.build_requires("Catch2/2.10.0@catchorg/stable")
-        self.build_requires("fmt/6.0.0")
+        self.build_requires("catch2/2.12.2")
+        self.build_requires("fmt/6.2.1")
 
 
     def init_cmake(self):

@@ -65,7 +65,7 @@ target_include_directories(fetchpp
 )
 target_compile_definitions(fetchpp PUBLIC BOOST_BEAST_SEPARATE_COMPILATION BOOST_BEAST_USE_STD_STRING_VIEW)
 
-target_link_libraries(fetchpp PUBLIC CONAN_PKG::Boost CONAN_PKG::jsonformoderncpp)
+target_link_libraries(fetchpp PUBLIC CONAN_PKG::boost CONAN_PKG::nlohmann_json CONAN_PKG::libressl)
 
 install(DIRECTORY include DESTINATION .)
 
