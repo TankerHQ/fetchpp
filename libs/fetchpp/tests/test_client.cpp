@@ -14,8 +14,8 @@ using namespace test::helpers::http_literals;
 TEST_CASE_METHOD(ioc_fixture, "client one", "[client][http]")
 {
   fetchpp::client cl{ioc};
-  auto const url = fetchpp::http::url::parse("get"_http);
-  auto const surl = fetchpp::http::url::parse("get"_https);
+  auto const url = fetchpp::http::url("get"_http);
+  auto const surl = fetchpp::http::url("get"_https);
   auto request = fetchpp::http::make_request(fetchpp::http::verb::get, url);
   auto srequest = fetchpp::http::make_request(fetchpp::http::verb::get, surl);
 

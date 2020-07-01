@@ -8,9 +8,10 @@ target_link_libraries(test_helpers CONAN_PKG::boost CONAN_PKG::fmt CONAN_PKG::nl
 
 add_executable(test_unitary
   test_request.cpp
+  test_url.cpp
   main.cpp
 )
-target_link_libraries(test_unitary test_helpers fetchpp CONAN_PKG::catch2 CONAN_PKG::fmt CONAN_PKG::nlohmann_json)
+target_link_libraries(test_unitary test_helpers fetchpp CONAN_PKG::skyr-url CONAN_PKG::catch2 CONAN_PKG::fmt CONAN_PKG::nlohmann_json)
 
 add_executable(test_functional
   tests.cpp

@@ -12,10 +12,9 @@ class FetchppConan(ConanFile):
     options = {
         "shared": [True, False],
         "fPIC": [True, False],
-        "with_ssl": [True, False],
         "warn_as_error": [True, False]
     }
-    default_options = {"shared": False, "fPIC": True, "with_ssl": True, "warn_as_error": False}
+    default_options = {"shared": False, "fPIC": True, "warn_as_error": False}
     generators = "cmake"
     exports_sources = "CMakeLists.txt", "libs/*"
     cmake = None
@@ -30,6 +29,7 @@ class FetchppConan(ConanFile):
         self.requires("libressl/3.2.0")
         self.requires("boost/1.71.0")
         self.requires("nlohmann_json/3.8.0")
+        self.requires("skyr-url/1.11.0")
 
 
     def build_requirements(self):

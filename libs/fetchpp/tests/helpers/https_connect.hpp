@@ -14,8 +14,9 @@ inline auto http_resolve_domain(fetchpp::net::io_context& ioc,
                                 fetchpp::http::url const& url)
 {
   fetchpp::tcp::resolver resolver(ioc);
-  return resolver.resolve(url.domain(),
-                          std::to_string(url.port()),
+  auto port = fetchpp::http::safe_port(url);
+  return resolver.resolve(url.hostname(),
+                          std::to_string(port),
                           boost::asio::ip::resolver_base::numeric_service);
 }
 

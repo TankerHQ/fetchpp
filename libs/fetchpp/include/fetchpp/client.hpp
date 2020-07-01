@@ -12,6 +12,7 @@
 #include <boost/asio/ssl/context.hpp>
 
 #include <fetchpp/core/detail/async_http_result.hpp>
+#include <fetchpp/core/detail/endpoint.hpp>
 #include <fetchpp/core/detail/http_stable_async.hpp>
 
 #include <fetchpp/alias/beast.hpp>
@@ -60,10 +61,10 @@ struct client_fetch_op
       coro(),
       data(beast::allocate_stable<data_t>(*this, client, std::move(req)))
   {
-    if (auto const& uri = data.req.uri(); uri.is_ssl_involved())
-      start(secure_endpoint(uri.domain(), uri.port()));
+    if (auto const& uri = data.req.uri(); http::is_ssl_involved(uri))
+      start(to_endpoint<true>(uri));
     else
-      start(plain_endpoint(uri.domain(), uri.port()));
+      start(to_endpoint<false>(uri));
   }
 
   template <bool isSecure>

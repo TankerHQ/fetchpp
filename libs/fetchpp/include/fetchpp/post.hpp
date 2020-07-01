@@ -14,7 +14,7 @@ auto async_post(net::executor ex,
                 CompletionToken&& token)
 {
   auto request = http::make_request<Request>(
-      http::verb::post, http::url::parse(url_str), {}, std::move(data));
+      http::verb::post, http::url(url_str), {}, std::move(data));
   for (auto const& field : fields)
     request.insert(field.field, field.field_name, field.value);
   return async_fetch(

@@ -8,6 +8,7 @@
 
 #include <fetchpp/core/detail/async_http_result.hpp>
 #include <fetchpp/core/detail/coroutine.hpp>
+#include <fetchpp/core/detail/endpoint.hpp>
 #include <fetchpp/core/detail/http_stable_async.hpp>
 
 #include <boost/beast/core/bind_handler.hpp>
@@ -119,10 +120,8 @@ struct fetch_composer_with_ssl
   void operator()(Self& self)
   {
     // sslc.set_verify_mode(context::verify_peer);
-    auto endpoint =
-        secure_endpoint(request.uri().domain(), request.uri().port());
     async_fetch_impl<secure_endpoint, ssl_async_transport, Response>(
-        std::move(endpoint),
+        detail::to_endpoint<true>(request.uri()),
         ssl_async_transport(ex, sslc),
         std::move(request),
         std::move(self));
@@ -142,7 +141,7 @@ auto async_fetch(net::executor ex,
                  CompletionToken&& token)
     -> detail::async_http_return_type_t<CompletionToken, Response>
 {
-  auto endpoint = secure_endpoint(request.uri().domain(), request.uri().port());
+  auto endpoint = detail::to_endpoint<true>(request.uri());
   return async_fetch_impl<secure_endpoint, ssl_async_transport, Response>(
       std::move(endpoint),
       ssl_async_transport(ex, sslc),
@@ -154,23 +153,17 @@ template <typename Response, typename Request, typename CompletionToken>
 auto async_fetch(net::executor ex, Request request, CompletionToken&& token)
     -> detail::async_http_return_type_t<CompletionToken, Response>
 {
-  auto domain = request.uri().domain();
-  auto port = request.uri().port();
-  if (request.uri().is_ssl_involved())
-  {
+  if (http::is_ssl_involved(request.uri()))
     return net::async_compose<CompletionToken, void(error_code, Response)>(
         detail::fetch_composer_with_ssl<Request, Response>{std::move(request),
                                                            ex},
         token,
         ex);
-  }
   else
-  {
     return async_fetch_impl<plain_endpoint, tcp_async_transport, Response>(
-        plain_endpoint(std::move(domain), port),
+        detail::to_endpoint<false>(request.uri()),
         tcp_async_transport(ex),
         std::move(request),
         std::forward<CompletionToken>(token));
-  }
 }
 }
