@@ -8,6 +8,8 @@
 #include <fetchpp/http/request.hpp>
 #include <fetchpp/http/response.hpp>
 
+#include <fetchpp/core/detail/endpoint.hpp>
+
 #include "helpers/format.hpp"
 #include "helpers/ioc_fixture.hpp"
 #include "helpers/match_exception.hpp"
@@ -37,10 +39,9 @@ TEST_CASE_METHOD(ioc_fixture,
                  "[session][connect]")
 {
   ssl::context context(ssl::context::tlsv12_client);
-  auto url = fetchpp::http::url::parse("https://127.0.0.2:444");
-  auto session =
-      fetchpp::session(fetchpp::secure_endpoint(url.domain(), url.port()),
-                       AsyncStream(ioc, context));
+  auto url = fetchpp::http::url("https://127.0.0.2:444");
+  auto session = fetchpp::session(fetchpp::secure_endpoint("127.0.0.2", 444),
+                                  AsyncStream(ioc, context));
   auto request = fetchpp::http::make_request(fetchpp::http::verb::get, url);
   fetchpp::http::response response;
   REQUIRE_THROWS_MATCHES(
@@ -56,14 +57,13 @@ TEST_CASE_METHOD(
     "[session][push]")
 {
   ssl::context context(ssl::context::tlsv12_client);
-  auto const url = fetchpp::http::url::parse("get"_https);
-  auto session =
-      fetchpp::session(fetchpp::secure_endpoint(url.domain(), url.port()),
-                       AsyncStream(ioc, context));
+  auto const url = fetchpp::http::url("get"_https);
+  auto session = fetchpp::session(fetchpp::detail::to_endpoint<true>(url),
+                                  AsyncStream(ioc, context));
   REQUIRE_NOTHROW(session.async_start(boost::asio::use_future).get());
 
-  auto request = fetchpp::http::make_request(
-      fetchpp::http::verb::get, fetchpp::http::url::parse("get"_https));
+  auto request = fetchpp::http::make_request(fetchpp::http::verb::get,
+                                             fetchpp::http::url("get"_https));
   {
     fetchpp::http::response response;
     session.push_request(request, response, boost::asio::use_future).get();
@@ -76,12 +76,11 @@ TEST_CASE_METHOD(ioc_fixture,
                  "[session][push]")
 {
   ssl::context context(ssl::context::tlsv12_client);
-  auto const url = fetchpp::http::url::parse("get"_https);
-  auto session =
-      fetchpp::session(fetchpp::secure_endpoint(url.domain(), url.port()),
-                       AsyncStream(ioc, context));
-  auto request = fetchpp::http::make_request(
-      fetchpp::http::verb::get, fetchpp::http::url::parse("get"_https));
+  auto const url = fetchpp::http::url("get"_https);
+  auto session = fetchpp::session(fetchpp::detail::to_endpoint(url),
+                                  AsyncStream(ioc, context));
+  auto request = fetchpp::http::make_request(fetchpp::http::verb::get,
+                                             fetchpp::http::url("get"_https));
   {
     fetchpp::http::response response;
     session.push_request(request, response, boost::asio::use_future).get();
@@ -100,15 +99,14 @@ TEST_CASE("session executes multiple requests pushed", "[session][push]")
 {
   fetchpp::net::io_context ioc;
   ssl::context context(ssl::context::tlsv12_client);
-  auto const url = fetchpp::http::url::parse("get"_https);
-  auto session =
-      fetchpp::session(fetchpp::secure_endpoint(url.domain(), url.port()),
-                       AsyncStream(ioc, context));
-  auto request = fetchpp::http::make_request(
-      fetchpp::http::verb::get, fetchpp::http::url::parse("get"_https));
+  auto const url = fetchpp::http::url("get"_https);
+  auto session = fetchpp::session(fetchpp::detail::to_endpoint(url),
+                                  AsyncStream(ioc, context));
+  auto request = fetchpp::http::make_request(fetchpp::http::verb::get,
+                                             fetchpp::http::url("get"_https));
   auto request2 = fetchpp::http::make_request<
       fetchpp::http::request<fetchpp::http::json_body>>(
-      fetchpp::http::verb::get, fetchpp::http::url::parse("get"_https));
+      fetchpp::http::verb::get, fetchpp::http::url("get"_https));
 
   fetchpp::http::response response;
   auto fut = session.push_request(request, response, fetchpp::net::use_future);

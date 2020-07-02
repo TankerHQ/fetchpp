@@ -1,134 +1,44 @@
 #include <fetchpp/http/url.hpp>
 
+#include <nlohmann/json.hpp>
+#include <skyr/json/json.hpp>
+
 #include <exception>
-#include <regex>
+#include <string_view>
 
 namespace fetchpp::http
 {
-namespace
+std::int16_t safe_port(url const& uri)
 {
-constexpr uint16_t service_to_port(std::string_view service)
-{
-  // maybe use asio resoler for that ? what about async ?
-  if (service == "https")
-    return 443;
-  else if (service == "http")
-    return 80;
-  else
-    return 0;
-}
-template <typename T>
-uint16_t match_port(std::sub_match<T> const& port_match,
-                    std::sub_match<T> const& scheme_match)
-{
-  if (port_match.matched)
-    return std::stoi(port_match.str());
-  return service_to_port(scheme_match.str());
-}
-}
-
-url url::parse(std::string const& purl)
-{
-  using namespace std::string_literals;
-  // https://regex101.com/r/QfqRd0/5
-  static auto const rg = std::regex(
-      R"(^(?:(https?)://)?(?:.*?@)?([^:@/]+?)(?::(\d+))?([/?].*?)?$)",
-      std::regex::optimize);
-  std::smatch match;
-  if (!std::regex_match(purl, match, rg))
-    throw std::runtime_error("bad url");
-  if (!match[2].matched)
-    throw std::runtime_error("no domain!");
-
-  return {match[1], match[2], match_port(match[3], match[1]), match[4]};
-}
-
-url::url(std::string scheme,
-         std::string domain,
-         uint16_t port,
-         std::string target)
-  : _scheme(std::move(scheme)),
-    _domain(std::move(domain)),
-    _port(port),
-    _target(std::move(target))
-{
-}
-
-std::string const& url::scheme() const
-{
-  return _scheme;
-}
-
-std::string const& url::domain() const
-{
-  return _domain;
-}
-
-std::string url::host() const
-{
-  if (port() != 80 && port() != 443)
-    return domain() + ":" + std::to_string(port());
-  return domain();
-}
-
-uint16_t url::port() const
-{
-  return _port;
-}
-
-std::string const& url::target() const
-{
-  return _target;
-}
-
-void url::scheme(std::string_view scheme)
-{
-  _scheme = scheme;
-}
-
-void url::domain(std::string_view domain)
-{
-  _domain = domain;
-}
-
-void url::port(uint16_t p)
-{
-  _port = p;
-}
-
-void url::target(std::string_view target)
-{
-  _target = target;
-}
-
-bool url::is_ssl_involved() const
-{
-  if (!scheme().empty())
+  if (uri.port().empty())
   {
-    if (scheme() == "https")
-      return true;
+    auto const proto = uri.protocol();
+    auto const scheme = std::string_view{proto.data(), proto.size() - 1};
+    if (auto port = url::default_port(scheme); port.has_value())
+      return *port;
   }
-  else if (port() == 443)
-    return true;
-  return false;
+  else if (auto port = uri.port<std::int16_t>(); port.has_value())
+  {
+    return *port;
+  }
+  throw std::domain_error("cannot deduce port");
 }
 
-namespace http_literals
+bool is_ssl_involved(url const& uri)
 {
-url operator""_https(const char* target, std::size_t)
-{
-  auto res = url::parse(target);
-  res.scheme("https");
-  res.port(service_to_port("https"));
-  return res;
+  if (!uri.protocol().empty())
+    return uri.protocol() == "https:";
+  return uri.port<std::int16_t>() == 443;
 }
-url operator""_http(const char* target, std::size_t)
+
+nlohmann::json decode_query(std::string_view query)
 {
-  auto res = url::parse(target);
-  res.scheme("http");
-  res.port(service_to_port("http"));
-  return res;
+  return skyr::json::decode_query(query);
 }
+
+std::string encode_query(nlohmann::json const& json)
+{
+  return skyr::json::encode_query(json).value();
 }
 
 }

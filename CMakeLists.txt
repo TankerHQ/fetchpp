@@ -68,5 +68,3 @@ fetchpp_add_flags(CMAKE_C_FLAGS ${COMMON_COMPILE_FLAGS})
 fetchpp_add_flags(CMAKE_CXX_FLAGS ${COMMON_COMPILE_FLAGS})
 
 add_subdirectory(libs/fetchpp)
-
-

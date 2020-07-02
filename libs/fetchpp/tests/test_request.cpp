@@ -66,13 +66,13 @@ TEST_CASE("request set host and port", "[custom_port]")
 {
   using namespace fetchpp::http;
   {
-    auto url = fetchpp::http::url::parse("http://domain.com:2121/target");
+    auto url = fetchpp::http::url("http://domain.com:2121/target");
     auto request = make_request(verb::get, url);
     REQUIRE(request[field::host] == "domain.com:2121");
   }
   {
-    auto url = fetchpp::http::url::parse("http://domain.com/target");
-    url.port(4242);
+    auto url = fetchpp::http::url("http://domain.com/target");
+    url.set_port(4242);
     auto request = make_request(verb::get, url);
     REQUIRE(request[field::host] == "domain.com:4242");
   }
@@ -82,9 +82,7 @@ TEST_CASE("request content_type", "[request]")
 {
   auto const req = fetchpp::http::make_request<
       fetchpp::http::request<fetchpp::http::json_body>>(
-      fetchpp::http::verb::get,
-      fetchpp::http::url::parse("http://toto.com"),
-      {});
+      fetchpp::http::verb::get, fetchpp::http::url("http://toto.com"), {});
   REQUIRE(req[fetchpp::http::field::content_type] == "application/json");
   REQUIRE(req.has_content_length());
 }

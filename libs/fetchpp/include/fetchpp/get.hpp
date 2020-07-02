@@ -13,8 +13,7 @@ auto async_get(net::executor ex,
                http::headers fields,
                CompletionToken&& token)
 {
-  auto request =
-      make_request(http::verb::get, http::url::parse(std::string(url_str)), {});
+  auto request = http::make_request(http::verb::get, http::url(url_str));
   for (auto const& field : fields)
     request.insert(field.field, field.field_name, field.value);
   return async_fetch<http::response>(ex, std::move(request), std::move(token));

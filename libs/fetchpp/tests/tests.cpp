@@ -40,12 +40,14 @@ auto EqualsHeader(nlohmann::json const& headers, std::string const& field)
 }
 }
 
+using fetchpp::http::make_request;
+
 TEST_CASE_METHOD(ioc_fixture,
                  "async fetch headers with lambda",
                  "[https][fetch][lambda]")
 {
-  auto request = make_request(fetchpp::http::verb::get,
-                              fetchpp::http::url::parse("get"_https));
+  auto request =
+      make_request(fetchpp::http::verb::get, fetchpp::http::url("get"_https));
   request.set("x-random-header", "this is a cute value");
   fetchpp::async_fetch<JsonResponse>(
       ex, std::move(request), [](auto err, auto response) {
@@ -64,8 +66,8 @@ TEST_CASE_METHOD(ioc_fixture,
 
 TEST_CASE_METHOD(ioc_fixture, "async fetch headers", "[https][fetch]")
 {
-  auto request = make_request(fetchpp::http::verb::get,
-                              fetchpp::http::url::parse("get"_https));
+  auto request =
+      make_request(fetchpp::http::verb::get, fetchpp::http::url("get"_https));
   request.set("X-Random-Header", "this is a cute value");
   auto response = fetchpp::async_fetch<JsonResponse>(
                       ex, std::move(request), boost::asio::use_future)
@@ -84,8 +86,8 @@ TEST_CASE_METHOD(ioc_fixture,
                  "async fetch beast::http::response headers with lambda",
                  "[https][fetch][lambda]")
 {
-  auto request = make_request(fetchpp::http::verb::get,
-                              fetchpp::http::url::parse("get"_https));
+  auto request =
+      make_request(fetchpp::http::verb::get, fetchpp::http::url("get"_https));
   request.set("X-Random-Header", "this is a cute value");
   fetchpp::async_fetch(ex, std::move(request), [](auto err, auto response) {
     REQUIRE(!err);
@@ -105,8 +107,8 @@ TEST_CASE_METHOD(ioc_fixture,
                  "async fetch beast::http::response headers",
                  "[https][fetch]")
 {
-  auto request = make_request(fetchpp::http::verb::get,
-                              fetchpp::http::url::parse("get"_https));
+  auto request =
+      make_request(fetchpp::http::verb::get, fetchpp::http::url("get"_https));
   request.set("x-random-header", "this is a cute value");
   auto response =
       fetchpp::async_fetch(ex, std::move(request), boost::asio::use_future)
@@ -122,8 +124,8 @@ TEST_CASE_METHOD(ioc_fixture,
 
 TEST_CASE_METHOD(ioc_fixture, "async fetch through https", "[https][fetch]")
 {
-  auto request = make_request(fetchpp::http::verb::get,
-                              fetchpp::http::url::parse("get"_https));
+  auto request =
+      make_request(fetchpp::http::verb::get, fetchpp::http::url("get"_https));
   auto response =
       fetchpp::async_fetch(ex, std::move(request), boost::asio::use_future)
           .get();
@@ -139,8 +141,8 @@ TEST_CASE_METHOD(ioc_fixture, "async fetch through https", "[https][fetch]")
 
 TEST_CASE_METHOD(ioc_fixture, "async fetch through http", "[http][fetch]")
 {
-  auto request = make_request(fetchpp::http::verb::get,
-                              fetchpp::http::url::parse("get"_http));
+  auto request =
+      make_request(fetchpp::http::verb::get, fetchpp::http::url("get"_http));
   auto response =
       fetchpp::async_fetch(ex, std::move(request), boost::asio::use_future)
           .get();
@@ -158,8 +160,8 @@ TEST_CASE_METHOD(ioc_fixture,
                  "async fetch with custom headers",
                  "[https][fetch]")
 {
-  auto request = make_request(fetchpp::http::verb::get,
-                              fetchpp::http::url::parse("get"_https));
+  auto request =
+      make_request(fetchpp::http::verb::get, fetchpp::http::url("get"_https));
   request.set("X-Random-Header", "this is a cute value");
   auto response =
       fetchpp::async_fetch(ex, std::move(request), boost::asio::use_future)
@@ -177,8 +179,8 @@ TEST_CASE_METHOD(ioc_fixture,
 
 TEST_CASE_METHOD(ioc_fixture, "async fetch", "[https][fetch]")
 {
-  auto request = make_request(fetchpp::http::verb::get,
-                              fetchpp::http::url::parse("get"_https));
+  auto request =
+      make_request(fetchpp::http::verb::get, fetchpp::http::url("get"_https));
   request.set("X-Random-Header", "this is a cute value");
   auto response =
       fetchpp::async_fetch(ex, std::move(request), boost::asio::use_future)
@@ -223,7 +225,7 @@ TEST_CASE_METHOD(ioc_fixture,
 {
   auto request =
       make_request(fetchpp::http::verb::get,
-                   fetchpp::http::url::parse("basic-auth/david/totopaf"_https));
+                   fetchpp::http::url("basic-auth/david/totopaf"_https));
   request.set(fetchpp::http::authorization::basic("david", "totopaf"));
   auto response =
       fetchpp::async_fetch(
@@ -238,7 +240,7 @@ TEST_CASE_METHOD(ioc_fixture,
                  "[https][fetch][bearer_auth][authorization]")
 {
   auto request = make_request(fetchpp::http::verb::get,
-                              fetchpp::http::url::parse("bearer"_https));
+                              fetchpp::http::url("bearer"_https));
   request.set(
       fetchpp::http::authorization::bearer("this_is_a_bearer_token_probably"));
   auto response =
@@ -253,8 +255,8 @@ TEST_CASE_METHOD(ioc_fixture,
                  "async fetch with ssl context",
                  "[https][fetch][get][verify_peer][!mayfail]")
 {
-  auto request = make_request(fetchpp::http::verb::get,
-                              fetchpp::http::url::parse("get"_https));
+  auto request =
+      make_request(fetchpp::http::verb::get, fetchpp::http::url("get"_https));
   request.set("X-Random-Header", "this is a cute value");
 
   using fetchpp::net::ssl::context;
