@@ -96,7 +96,12 @@ public:
 
   auto max_pending_per_session() const
   {
-    return 2u;
+    return max_pending_;
+  }
+
+  void set_max_pending_per_session(std::size_t pending)
+  {
+    max_pending_ = pending;
   }
 
 private:
@@ -153,6 +158,7 @@ public:
   }
 
   executor_type strand_;
+  std::size_t max_pending_ = 2u;
   net::ssl::context context_;
   std::deque<session<plain_endpoint, tcp_async_transport>> plain_sessions_;
   std::deque<session<secure_endpoint, ssl_async_transport>> secure_sessions_;
