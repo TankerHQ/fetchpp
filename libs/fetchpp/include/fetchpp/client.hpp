@@ -20,6 +20,7 @@
 #include <fetchpp/alias/net.hpp>
 #include <fetchpp/alias/ssl.hpp>
 
+#include <chrono>
 #include <deque>
 #include <memory>
 #include <queue>
@@ -28,7 +29,6 @@ namespace fetchpp
 {
 namespace detail
 {
-
 template <typename Client, typename Request, typename Response>
 struct client_fetch_data
 {
@@ -79,16 +79,19 @@ struct client_fetch_op
     this->complete(false, ec, std::move(std::exchange(data.res, Response{})));
   }
 };
-
 }
 
 class client
 {
 public:
-  client(net::executor ex);
-  client(net::io_context& ioc);
-  client(net::executor ex, net::ssl::context context);
-  client(net::io_context& ioc, net::ssl::context context);
+  explicit client(net::executor ex,
+                  std::chrono::nanoseconds = std::chrono::seconds(30));
+  explicit client(net::io_context& ioc,
+                  std::chrono::nanoseconds = std::chrono::seconds(30));
+  client(net::executor ex, std::chrono::nanoseconds, net::ssl::context context);
+  client(net::io_context& ioc,
+         std::chrono::nanoseconds,
+         net::ssl::context context);
 
   using executor_type = net::strand<net::executor>;
 
@@ -118,10 +121,10 @@ private:
     {
       if constexpr (Endpoint::is_secure::value)
         return sessions.emplace_back(
-            std::move(endpoint), AsyncTransport(this->strand_, this->context_));
+            std::move(endpoint), this->timeout_, this->strand_, this->context_);
       else
-        return sessions.emplace_back(std::move(endpoint),
-                                     AsyncTransport(this->strand_));
+        return sessions.emplace_back(
+            std::move(endpoint), this->timeout_, this->strand_);
     }
     return *found;
   }
@@ -158,6 +161,7 @@ public:
   }
 
   executor_type strand_;
+  std::chrono::nanoseconds timeout_;
   std::size_t max_pending_ = 2u;
   net::ssl::context context_;
   std::deque<session<plain_endpoint, tcp_async_transport>> plain_sessions_;
