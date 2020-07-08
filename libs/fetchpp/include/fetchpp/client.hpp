@@ -76,7 +76,9 @@ struct client_fetch_op
 
   void operator()(error_code ec = {})
   {
-    this->complete(false, ec, std::move(std::exchange(data.res, Response{})));
+    // pin the response before data_t is destroyed
+    auto res = std::move(data.res);
+    this->complete(false, ec, std::move(res));
   }
 };
 }
