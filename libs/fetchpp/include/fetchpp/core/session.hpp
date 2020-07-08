@@ -17,6 +17,7 @@
 #include <fetchpp/alias/net.hpp>
 #include <fetchpp/alias/tcp.hpp>
 
+#include <chrono>
 #include <string_view>
 
 namespace fetchpp
@@ -129,6 +130,13 @@ public:
   {
   }
 
+  session(endpoint_type endpoint,
+          std::chrono::nanoseconds timeout,
+          net::executor& ex)
+    : endpoint_(std::move(endpoint)), transport_(timeout, ex)
+  {
+  }
+
   template <typename CompletionToken>
   auto async_start(CompletionToken&& token)
   {
@@ -174,11 +182,13 @@ private:
   detail::session_work_queue pending_;
 };
 
-session(secure_endpoint, beast::ssl_stream<beast::tcp_stream> &&)
+session(secure_endpoint,
+        std::chrono::nanoseconds,
+        beast::ssl_stream<beast::tcp_stream> &&)
     ->session<secure_endpoint, ssl_async_transport>;
 
 template <typename AsyncStream>
-session(plain_endpoint, AsyncStream &&)
+session(plain_endpoint, std::chrono::nanoseconds, AsyncStream &&)
     ->session<plain_endpoint,
               basic_async_transport<AsyncStream, beast::multi_buffer>>;
 }

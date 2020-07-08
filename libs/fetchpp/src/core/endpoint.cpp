@@ -1,4 +1,4 @@
-#include <fetchpp/core/basic_transport.hpp>
+#include <fetchpp/core/detail/endpoint.hpp>
 
 namespace fetchpp
 {

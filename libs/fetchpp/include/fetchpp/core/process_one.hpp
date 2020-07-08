@@ -46,7 +46,7 @@ template <typename AsyncStream,
           typename Request,
           typename Response,
           typename Buffer>
-struct process_one_composer
+struct process_one_stream_op
 {
   AsyncStream& stream;
   Request& req;
@@ -93,10 +93,46 @@ auto async_process_one(AsyncStream& stream,
                 "Buffer type requirements not met");
 
   return net::async_compose<CompletionToken, void(error_code)>(
-      detail::process_one_composer<AsyncStream, Request, Response, Buffer>{
+      detail::process_one_stream_op<AsyncStream, Request, Response, Buffer>{
           stream, request, response, buffer},
       token,
       stream);
+}
+
+namespace detail
+{
+namespace
+{
+template <typename AsyncTransport, typename Request, typename Response>
+struct process_one_transport_op
+{
+  AsyncTransport& transport_;
+  Request& req;
+  Response& res;
+
+  net::coroutine coro = net::coroutine{};
+  template <typename Self>
+  void operator()(Self& self, error_code ec = error_code{}, std::size_t = 0)
+  {
+    if (ec)
+    {
+      self.complete(ec);
+      return;
+    }
+    FETCHPP_REENTER(coro)
+    {
+      transport_.setup_timer();
+      FETCHPP_YIELD async_process_one(transport_.next_layer(),
+                                      transport_.buffer(),
+                                      req,
+                                      res,
+                                      std::move(self));
+      transport_.cancel_timer();
+      self.complete(ec);
+    }
+  }
+};
+}
 }
 
 template <typename AsyncTransport,
@@ -113,10 +149,10 @@ auto async_process_one(AsyncTransport& transport,
 {
   static_assert(is_async_transport<AsyncTransport>::value,
                 "AsyncTransport type requirements not met");
-  return async_process_one(transport.next_layer(),
-                           transport.buffer(),
-                           request,
-                           response,
-                           std::forward<CompletionToken>(token));
+  return net::async_compose<CompletionToken, void(error_code)>(
+      detail::process_one_transport_op<AsyncTransport, Request, Response>{
+          transport, request, response},
+      token,
+      transport);
 }
 }

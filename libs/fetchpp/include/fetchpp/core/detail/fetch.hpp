@@ -122,7 +122,7 @@ struct fetch_composer_with_ssl
     // sslc.set_verify_mode(context::verify_peer);
     async_fetch_impl<secure_endpoint, ssl_async_transport, Response>(
         detail::to_endpoint<true>(request.uri()),
-        ssl_async_transport(ex, sslc),
+        ssl_async_transport(std::chrono::seconds(30), ex, sslc),
         std::move(request),
         std::move(self));
   }
@@ -144,7 +144,7 @@ auto async_fetch(net::executor ex,
   auto endpoint = detail::to_endpoint<true>(request.uri());
   return async_fetch_impl<secure_endpoint, ssl_async_transport, Response>(
       std::move(endpoint),
-      ssl_async_transport(ex, sslc),
+      ssl_async_transport(std::chrono::seconds(30), ex, sslc),
       std::move(request),
       std::move(token));
 }
@@ -162,7 +162,7 @@ auto async_fetch(net::executor ex, Request request, CompletionToken&& token)
   else
     return async_fetch_impl<plain_endpoint, tcp_async_transport, Response>(
         detail::to_endpoint<false>(request.uri()),
-        tcp_async_transport(ex),
+        tcp_async_transport(std::chrono::seconds(30), ex),
         std::move(request),
         std::forward<CompletionToken>(token));
 }
