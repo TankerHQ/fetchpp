@@ -103,7 +103,7 @@ TEST_CASE_METHOD(ioc_fixture,
 
 TEST_CASE_METHOD(ioc_fixture,
                  "sessions abort when connection times out",
-                 "[session][drip]")
+                 "[session][delay]")
 {
   ssl::context sslc(ssl::context::tlsv12_client);
   auto session = fetchpp::session(fetchpp::secure_endpoint("10.255.255.1", 444),
@@ -118,10 +118,9 @@ TEST_CASE_METHOD(ioc_fixture,
                  "session aborts a request that takes to much time",
                  "[session][delay]")
 {
-  auto const url = fetchpp::http::url("delay/4"_https);
-  ssl::context sslc(ssl::context::tlsv12_client);
-  auto session = fetchpp::session(
-      fetchpp::detail::to_endpoint(url), 2s, AsyncStream(ioc, sslc));
+  auto const url = fetchpp::http::url("delay/4"_http);
+  auto session =
+      fetchpp::session(fetchpp::detail::to_endpoint<false>(url), 2s, ex);
   REQUIRE_NOTHROW(session.async_start(boost::asio::use_future).get());
   auto request = fetchpp::http::make_request(fetchpp::http::verb::get, url);
   fetchpp::http::response response;
@@ -163,11 +162,11 @@ TEST_CASE_METHOD(ioc_fixture,
                  "session executes multiple requests pushed with some delay",
                  "[session][push][delay]")
 {
-  ssl::context context(ssl::context::tlsv12_client);
-  auto const urlget = fetchpp::http::url("get"_https);
-  auto const urldelay = fetchpp::http::url("delay/2"_https);
-  auto session = fetchpp::session(
-      fetchpp::detail::to_endpoint(urlget), 2s, AsyncStream(ex, context));
+  auto const urlget = fetchpp::http::url("get"_http);
+  auto const urldelay = fetchpp::http::url("delay/3"_http);
+  auto session =
+      fetchpp::session(fetchpp::detail::to_endpoint<false>(urlget), 2s, ex);
+
   auto get = fetchpp::http::make_request(fetchpp::http::verb::get, urlget);
   auto delay = fetchpp::http::make_request<
       fetchpp::http::request<fetchpp::http::json_body>>(
@@ -176,14 +175,15 @@ TEST_CASE_METHOD(ioc_fixture,
   fetchpp::http::response response;
   auto fut = session.push_request(get, response, fetchpp::net::use_future);
 
-  fetchpp::http::response response2;
-  auto fut2 = session.push_request(delay, response2, fetchpp::net::use_future);
+  fetchpp::http::response delay_response;
+  auto delay_fut =
+      session.push_request(delay, delay_response, fetchpp::net::use_future);
 
   fut.get();
   REQUIRE(response.result_int() == 200);
 
   REQUIRE_THROWS_MATCHES(
-      fut2.get(),
+      delay_fut.get(),
       boost::system::system_error,
       HasErrorCode(boost::beast::error::timeout) ||
           HasErrorCode(boost::asio::ssl::error::stream_truncated));
