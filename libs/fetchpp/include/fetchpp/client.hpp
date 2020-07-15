@@ -36,8 +36,8 @@ struct client_fetch_data
   Request req;
   Response res;
 
-  client_fetch_data(Client& client, Request request)
-    : client{client}, req{request}, res{}
+  client_fetch_data(Client& client, Request&& request)
+    : client{client}, req{std::move(request)}, res{}
   {
   }
 };
