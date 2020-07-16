@@ -15,15 +15,6 @@ def build_and_test(profile: str, coverage: bool) -> None:
     tankerci.cpp.check(built_path, coverage=coverage)
 
 
-def deploy() -> None:
-    git_tag = os.environ["CI_COMMIT_TAG"]
-    version = tankerci.version_from_git_tag(git_tag)
-    tankerci.bump_files(version)
-    tankerci.cpp.build_recipe(
-        Path.getcwd(), conan_reference=f"fetchpp/{version}@tanker/stable", upload=True
-    )
-
-
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -51,8 +42,6 @@ def main() -> None:
         build_and_test(args.profile, args.coverage)
     elif args.command == "mirror":
         tankerci.git.mirror(github_url="git@github.com:TankerHQ/fetchpp", force=True)
-    elif args.command == "deploy":
-        deploy()
 
 
 if __name__ == "__main__":
