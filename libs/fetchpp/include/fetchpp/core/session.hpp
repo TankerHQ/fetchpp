@@ -4,6 +4,7 @@
 #include <fetchpp/core/detail/coroutine.hpp>
 #include <fetchpp/core/process_one.hpp>
 #include <fetchpp/core/ssl_transport.hpp>
+#include <fetchpp/core/tcp_transport.hpp>
 
 #include <fetchpp/core/detail/async_http_result.hpp>
 #include <fetchpp/core/detail/session_work_queue.hpp>
@@ -187,8 +188,12 @@ session(secure_endpoint,
         beast::ssl_stream<beast::tcp_stream> &&)
     ->session<secure_endpoint, ssl_async_transport>;
 
+session(plain_endpoint, std::chrono::nanoseconds, net::executor&)
+    ->session<plain_endpoint, tcp_async_transport>;
+
 template <typename AsyncStream>
 session(plain_endpoint, std::chrono::nanoseconds, AsyncStream &&)
     ->session<plain_endpoint,
               basic_async_transport<AsyncStream, beast::multi_buffer>>;
+
 }

@@ -1,5 +1,7 @@
 #include <fetchpp/client.hpp>
 
+#include <fetchpp/http/json_body.hpp>
+
 #include <boost/asio/use_future.hpp>
 
 #include "helpers/format.hpp"
@@ -18,7 +20,22 @@ using namespace test::helpers;
 using namespace test::helpers::http_literals;
 using test::helpers::HasErrorCode;
 
-TEST_CASE_METHOD(ioc_fixture, "client one", "[client][http]")
+TEST_CASE_METHOD(ioc_fixture, "client push one request", "[client][http]")
+{
+  fetchpp::client cl{ioc};
+  auto const url = fetchpp::http::url("get"_https);
+  auto request = fetchpp::http::make_request<
+      fetchpp::http::request<fetchpp::http::json_body>>(
+      fetchpp::http::verb::get, url);
+
+  auto res = cl.async_fetch(std::move(request), boost::asio::use_future).get();
+  REQUIRE(res.result_int() == 200);
+  REQUIRE(cl.session_count() == 1);
+  static_assert(fetchpp::net::is_executor<
+                typename fetchpp::client::executor_type>::value);
+}
+
+TEST_CASE_METHOD(ioc_fixture, "client push two requests", "[client][http]")
 {
   fetchpp::client cl{ioc};
   auto const url = fetchpp::http::url("get"_http);
@@ -31,8 +48,6 @@ TEST_CASE_METHOD(ioc_fixture, "client one", "[client][http]")
   auto res2 = cl.async_fetch(srequest, boost::asio::use_future).get();
   REQUIRE(res2.result_int() == 200);
   REQUIRE(cl.session_count() == 2);
-  static_assert(fetchpp::net::is_executor<
-                typename fetchpp::client::executor_type>::value);
 }
 
 TEST_CASE_METHOD(ioc_fixture, "client with delay", "[client][http][delay]")

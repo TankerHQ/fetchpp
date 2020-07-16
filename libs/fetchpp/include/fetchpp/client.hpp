@@ -36,8 +36,8 @@ struct client_fetch_data
   Request req;
   Response res;
 
-  client_fetch_data(Client& client, Request request)
-    : client{client}, req{request}, res{}
+  client_fetch_data(Client& client, Request&& request)
+    : client{client}, req{std::move(request)}, res{}
   {
   }
 };
@@ -76,7 +76,9 @@ struct client_fetch_op
 
   void operator()(error_code ec = {})
   {
-    this->complete(false, ec, std::move(std::exchange(data.res, Response{})));
+    // pin the response before data_t is destroyed
+    auto res = std::move(data.res);
+    this->complete(false, ec, std::move(res));
   }
 };
 }
