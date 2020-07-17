@@ -11,6 +11,7 @@
 
 #include <boost/asio/compose.hpp>
 #include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/post.hpp>
 #include <boost/beast/core/error.hpp>
 
 #include <fetchpp/alias/beast.hpp>
@@ -51,6 +52,12 @@ struct process_queue_op
   template <typename Self>
   void operator()(Self& self, error_code ec = {})
   {
+    if (ec == net::error::operation_aborted)
+    {
+      session_.work_queue_.cancel_all();
+      self.complete(ec);
+      return;
+    }
     FETCHPP_REENTER(coro_)
     {
       if (!is_open(session_.transport_))
@@ -58,13 +65,15 @@ struct process_queue_op
         FETCHPP_YIELD session_.async_start(std::move(self));
         if (ec)
         {
+          session_.work_queue_.cancel_all();
           self.complete(ec);
           return;
         }
       }
       FETCHPP_YIELD async_process_one(
           session_.transport_, request_, response_, std::move(self));
-      if (ec && ec != beast::error::timeout)
+      if (ec && ec != beast::error::timeout &&
+          ec != net::error::operation_aborted)
       {
         last_ec = ec;
         FETCHPP_YIELD session_.async_stop(std::move(self));
@@ -73,15 +82,30 @@ struct process_queue_op
 
       if (is_brutally_closed(ec) && !session_.first_round_)
       {
-        // we reset the coroutine state to try a re-connection
-        coro_ = {};
-        session_.first_round_ = true;
-        net::post(beast::bind_front_handler(std::move(self), ec));
-        return;
+        FETCHPP_YIELD
+        {
+          auto const real_ec = ec;
+          session_.async_stop(std::move(self));
+          // we ignore the async_stop() ec
+          ec = real_ec;
+        }
+        if (!session_.first_round_)
+        {
+          // we reset the coroutine state to try a re-connection
+          coro_ = {};
+          session_.first_round_ = true;
+          net::post(beast::bind_front_handler(std::move(self), ec));
+          return;
+        }
       }
       else
         session_.first_round_ = false;
-      session_.work_queue_.consume();
+
+      if (session_.is_running_)
+        session_.work_queue_.consume();
+      else
+        session_.work_queue_.cancel_all();
+
       self.complete(ec);
     }
   }
@@ -106,6 +130,11 @@ auto make_work(Session& session,
     session_work(Session& sess, Request& req, Response& res, Handler&& h)
       : session_(sess), request_(req), response_(res), handler_(std::move(h))
     {
+    }
+
+    void cancel() override
+    {
+      handler_(net::error::operation_aborted);
     }
 
     void operator()(session_work_queue&) override
@@ -163,11 +192,20 @@ public:
   template <typename Response, typename Request, typename CompletionToken>
   auto push_request(Request& req, Response& res, CompletionToken&& token)
   {
-    // FIXME: move that to the session strand
     net::async_completion<CompletionToken, void(error_code)> comp{token};
-    req.keep_alive(true);
-    work_queue_.push(
-        detail::make_work(*this, req, res, std::move(comp.completion_handler)));
+    if (!is_running_)
+    {
+      net::post(get_executor(),
+                beast::bind_front_handler(std::move(comp.completion_handler),
+                                          net::error::operation_aborted));
+    }
+    else
+    {
+      // FIXME: move that to the session strand
+      req.keep_alive(true);
+      work_queue_.push(detail::make_work(
+          *this, req, res, std::move(comp.completion_handler)));
+    }
     return comp.result.get();
   }
 
@@ -189,6 +227,7 @@ public:
   template <typename CompletionToken>
   auto async_stop(CompletionToken&& token)
   {
+    is_running_ = false;
     return async_close(transport_, std::forward<CompletionToken>(token));
   }
 
@@ -203,6 +242,7 @@ private:
   endpoint_type endpoint_;
   transport_type transport_;
   detail::session_work_queue work_queue_;
+  bool is_running_ = true;
   bool first_round_ = true;
 };
 

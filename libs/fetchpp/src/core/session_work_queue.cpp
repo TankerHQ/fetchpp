@@ -23,6 +23,16 @@ void session_work_queue::consume()
   advance();
 }
 
+void session_work_queue::cancel_all()
+{
+  items_.pop();
+  while (!items_.empty())
+  {
+    items_.front()->cancel();
+    items_.pop();
+  }
+}
+
 std::size_t session_work_queue::size() const
 {
   return items_.size();

@@ -3,7 +3,6 @@
 #include <fetchpp/http/request.hpp>
 #include <fetchpp/http/url.hpp>
 
-#include <iostream>
 #include <sstream>
 
 #include <catch2/catch.hpp>

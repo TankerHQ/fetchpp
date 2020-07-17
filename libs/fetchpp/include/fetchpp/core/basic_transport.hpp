@@ -4,6 +4,7 @@
 
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/compose.hpp>
+#include <boost/asio/ip/tcp.hpp>
 #include <boost/beast/core/stream_traits.hpp>
 
 #include <fetchpp/core/detail/coroutine.hpp>
@@ -11,6 +12,7 @@
 #include <fetchpp/alias/beast.hpp>
 #include <fetchpp/alias/error_code.hpp>
 #include <fetchpp/alias/net.hpp>
+#include <fetchpp/alias/tcp.hpp>
 
 #include <chrono>
 
@@ -26,17 +28,33 @@ struct async_basic_connect_op
   net::coroutine coro_ = {};
 
   template <typename Self>
-  void operator()(Self& self, error_code ec = {})
+  void operator()(Self& self,
+                  error_code ec = {},
+                  tcp::resolver::results_type results = {})
   {
     if (ec)
     {
+      transport_.cancel_timer();
       self.complete(ec);
+      return;
+    }
+    if (!transport_.running_)
+    {
+      transport_.cancel_timer();
+      self.complete(net::error::operation_aborted);
       return;
     }
     FETCHPP_REENTER(coro_)
     {
+      transport_.set_running(true);
       transport_.setup_timer();
-      FETCHPP_YIELD do_async_connect(endpoint_, transport_, std::move(self));
+      FETCHPP_YIELD transport_.resolver_.async_resolve(
+          endpoint_.domain(),
+          std::to_string(endpoint_.port()),
+          net::ip::resolver_base::numeric_service,
+          std::move(self));
+      FETCHPP_YIELD do_async_connect(
+          transport_, endpoint_.domain(), std::move(results), std::move(self));
       transport_.cancel_timer();
       self.complete(ec);
     }
@@ -55,6 +73,9 @@ class basic_async_transport
   static_assert(net::is_dynamic_buffer<DynamicBuffer>::value,
                 "DynamicBuffer type requirements not met");
 
+  template <typename AsyncTransport>
+  friend struct detail::async_basic_connect_op;
+
 public:
   using buffer_type = DynamicBuffer;
   using next_layer_type = AsyncStream;
@@ -65,8 +86,9 @@ public:
                         std::chrono::nanoseconds timeout,
                         Args&&... args)
     : buffer_(std::move(buffer)),
-      timeout_(timeout),
-      stream_(std::forward<Args>(args)...)
+      stream_(std::forward<Args>(args)...),
+      resolver_(stream_.get_executor()),
+      timeout_(timeout)
   {
   }
 
@@ -109,6 +131,16 @@ public:
     return stream_;
   }
 
+  tcp::resolver& resolver()
+  {
+    return resolver_;
+  }
+
+  tcp::resolver const& resolver() const
+  {
+    return resolver_;
+  }
+
   void setup_timer()
   {
     get_lowest_layer(stream_).expires_after(timeout_);
@@ -139,10 +171,22 @@ public:
     return buffer_;
   }
 
+  void set_running(bool r = true)
+  {
+    running_ = r;
+  }
+
+  bool is_running() const
+  {
+    return running_;
+  }
+
 private:
   buffer_type buffer_;
-  std::chrono::nanoseconds timeout_;
   next_layer_type stream_;
+  tcp::resolver resolver_;
+  std::chrono::nanoseconds timeout_;
+  bool running_ = true;
 };
 
 template <class T>

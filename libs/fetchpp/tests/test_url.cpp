@@ -55,13 +55,22 @@ TEST_CASE("parse url protocol", "[url]")
   REQUIRE(url("wss://www.example.com").protocol() == "wss:");
 }
 
-TEST_CASE("build an url", "[url]")
+TEST_CASE("build a url with a base", "[url]")
 {
   auto uri = url("Mexico/Mexico_City?temperature=celcius",
                  url("https://www.vacances.com"));
   REQUIRE(uri.protocol() == "https:");
   REQUIRE(uri.href() ==
           "https://www.vacances.com/Mexico/Mexico_City?temperature=celcius");
+}
+
+TEST_CASE("build a url with a base and a domain", "[url]")
+{
+  auto uri = url("https://example.com/Mexico/Mexico_City?temperature=celcius",
+                 url("https://www.vacances.com"));
+  REQUIRE(uri.protocol() == "https:");
+  REQUIRE(uri.href() ==
+          "https://example.com/Mexico/Mexico_City?temperature=celcius");
 }
 
 TEST_CASE("encode url query", "[url][query]")

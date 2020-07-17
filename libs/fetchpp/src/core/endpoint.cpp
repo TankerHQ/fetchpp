@@ -19,7 +19,7 @@ std::uint16_t base_endpoint::port() const
   return port_;
 }
 
-std::string_view base_endpoint::host() const
+std::string base_endpoint::host() const
 {
   return domain_ + ":" + std::to_string(port_);
 }
