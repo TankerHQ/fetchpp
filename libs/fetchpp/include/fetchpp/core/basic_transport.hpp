@@ -104,6 +104,11 @@ public:
     return stream_;
   }
 
+  next_layer_type const& next_layer() const
+  {
+    return stream_;
+  }
+
   void setup_timer()
   {
     get_lowest_layer(stream_).expires_after(timeout_);
