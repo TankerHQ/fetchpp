@@ -86,7 +86,8 @@ auto async_close(basic_async_transport<
 {
   net::async_completion<CompletionToken, void(error_code)> comp{token};
   beast::close_socket(beast::get_lowest_layer(ts));
-  net::post(beast::bind_front_handler(comp.completion_handler, error_code{}));
+  net::post(beast::bind_front_handler(std::move(comp.completion_handler),
+                                      error_code{}));
   return comp.result.get();
 }
 
