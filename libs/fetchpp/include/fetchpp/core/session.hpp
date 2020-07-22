@@ -25,14 +25,27 @@ namespace fetchpp
 {
 namespace detail
 {
-template <typename Transport, typename Request, typename Response>
+namespace
+{
+bool is_brutally_closed(error_code ec)
+{
+  return ec == net::error::eof || ec == net::error::connection_reset ||
+         ec == net::ssl::error::stream_truncated;
+}
+template <typename NextLayer>
+bool is_open(NextLayer const& layer)
+{
+  return beast::get_lowest_layer(layer).socket().is_open();
+}
+}
+
+template <typename Session, typename Request, typename Response>
 struct process_queue_op
 {
-  base_endpoint& endpoint;
-  Transport& transport;
-  session_work_queue& pending;
-  Request& request;
-  Response& response;
+  Session& session_;
+  Request& request_;
+  Response& response_;
+  error_code last_ec = {};
   net::coroutine coro_ = {};
 
   template <typename Self>
@@ -40,10 +53,9 @@ struct process_queue_op
   {
     FETCHPP_REENTER(coro_)
     {
-      if (!beast::get_lowest_layer(transport).socket().is_open() ||
-          ec == net::error::eof || ec == net::error::connection_reset)
+      if (!is_open(session_.transport_))
       {
-        FETCHPP_YIELD transport.async_connect(endpoint, std::move(self));
+        FETCHPP_YIELD session_.async_start(std::move(self));
         if (ec)
         {
           self.complete(ec);
@@ -51,62 +63,72 @@ struct process_queue_op
         }
       }
       FETCHPP_YIELD async_process_one(
-          transport, request, response, std::move(self));
-      pending.consume();
+          session_.transport_, request_, response_, std::move(self));
+      if (ec && ec != beast::error::timeout)
+      {
+        last_ec = ec;
+        FETCHPP_YIELD session_.async_stop(std::move(self));
+        ec = last_ec;
+      }
+
+      if (is_brutally_closed(ec) && !session_.first_round_)
+      {
+        // we reset the coroutine state to try a re-connection
+        coro_ = {};
+        session_.first_round_ = true;
+        net::post(beast::bind_front_handler(std::move(self), ec));
+        return;
+      }
+      else
+        session_.first_round_ = false;
+      session_.work_queue_.consume();
       self.complete(ec);
     }
   }
 };
 
-template <typename Transport,
+template <typename Session,
           typename Request,
           typename Response,
           typename Handler>
-auto make_work(base_endpoint& endpoint,
-               Transport& transport,
+auto make_work(Session& session,
                Request& request,
                Response& response,
                Handler&& handler)
 {
   struct session_work : detail::session_work_queue::work
   {
-    base_endpoint& endpoint;
-    Transport& transport;
-    Request& request;
-    Response& response;
-    Handler handler;
+    Session& session_;
+    Request& request_;
+    Response& response_;
+    Handler handler_;
 
-    session_work(base_endpoint& e,
-                 Transport& d,
-                 Request& req,
-                 Response& res,
-                 Handler&& h)
-      : endpoint(e),
-        transport(d),
-        request(req),
-        response(res),
-        handler(std::move(h))
+    session_work(Session& sess, Request& req, Response& res, Handler&& h)
+      : session_(sess), request_(req), response_(res), handler_(std::move(h))
     {
     }
 
-    void operator()(session_work_queue& q) override
+    void operator()(session_work_queue&) override
     {
       return net::async_compose<Handler, void(error_code)>(
-          detail::process_queue_op<Transport, Request, Response>{
-              endpoint, transport, q, request, response},
-          handler,
-          transport);
+          process_queue_op<Session, Request, Response>{
+              session_, request_, response_},
+          handler_,
+          session_.get_executor());
     }
   };
-  // FIXME: use someone associated_allocator
+  // FIXME: use someone's associated_allocator
   return std::make_unique<session_work>(
-      endpoint, transport, request, response, std::move(handler));
+      session, request, response, std::move(handler));
 }
 }
 
 template <typename Endpoint, typename AsyncTransport>
 class session
 {
+  template <typename Session, typename Request, typename Response>
+  friend struct detail::process_queue_op;
+
 public:
   session(session const&) = delete;
   session& operator=(session const&) = delete;
@@ -138,27 +160,20 @@ public:
   {
   }
 
-  template <typename CompletionToken>
-  auto async_start(CompletionToken&& token)
-  {
-    return transport_.async_connect(endpoint_,
-                                    std::forward<CompletionToken>(token));
-  }
-
   template <typename Response, typename Request, typename CompletionToken>
   auto push_request(Request& req, Response& res, CompletionToken&& token)
   {
     // FIXME: move that to the session strand
     net::async_completion<CompletionToken, void(error_code)> comp{token};
     req.keep_alive(true);
-    pending_.push(detail::make_work(
-        endpoint_, transport_, req, res, std::move(comp.completion_handler)));
+    work_queue_.push(
+        detail::make_work(*this, req, res, std::move(comp.completion_handler)));
     return comp.result.get();
   }
 
   auto pending_requests() const
   {
-    return pending_.size();
+    return work_queue_.size();
   }
 
   auto const& endpoint() const
@@ -178,9 +193,17 @@ public:
   }
 
 private:
+  template <typename CompletionToken>
+  auto async_start(CompletionToken&& token)
+  {
+    return transport_.async_connect(endpoint_,
+                                    std::forward<CompletionToken>(token));
+  }
+
   endpoint_type endpoint_;
   transport_type transport_;
-  detail::session_work_queue pending_;
+  detail::session_work_queue work_queue_;
+  bool first_round_ = true;
 };
 
 session(secure_endpoint,
@@ -195,5 +218,4 @@ template <typename AsyncStream>
 session(plain_endpoint, std::chrono::nanoseconds, AsyncStream &&)
     ->session<plain_endpoint,
               basic_async_transport<AsyncStream, beast::multi_buffer>>;
-
 }

@@ -65,7 +65,6 @@ TEST_CASE_METHOD(
   auto const url = fetchpp::http::url("get"_https);
   auto session = fetchpp::session(
       fetchpp::detail::to_endpoint<true>(url), 30s, AsyncStream(ioc, context));
-  REQUIRE_NOTHROW(session.async_start(boost::asio::use_future).get());
 
   auto request = fetchpp::http::make_request(fetchpp::http::verb::get,
                                              fetchpp::http::url("get"_https));
@@ -106,12 +105,16 @@ TEST_CASE_METHOD(ioc_fixture,
                  "[session][delay]")
 {
   ssl::context sslc(ssl::context::tlsv12_client);
+  auto const url = fetchpp::http::url("delay/4"_http);
+  auto request = fetchpp::http::make_request(fetchpp::http::verb::get, url);
   auto session = fetchpp::session(fetchpp::secure_endpoint("10.255.255.1", 444),
                                   3s,
                                   AsyncStream(ioc, sslc));
-  REQUIRE_THROWS_MATCHES(session.async_start(boost::asio::use_future).get(),
-                         boost::system::system_error,
-                         HasErrorCode(boost::beast::error::timeout));
+  fetchpp::http::response response;
+  REQUIRE_THROWS_MATCHES(
+      session.push_request(request, response, fetchpp::net::use_future).get(),
+      boost::system::system_error,
+      HasErrorCode(boost::beast::error::timeout));
 }
 
 TEST_CASE_METHOD(ioc_fixture,
@@ -121,7 +124,6 @@ TEST_CASE_METHOD(ioc_fixture,
   auto const url = fetchpp::http::url("delay/4"_http);
   auto session =
       fetchpp::session(fetchpp::detail::to_endpoint<false>(url), 2s, ex);
-  REQUIRE_NOTHROW(session.async_start(boost::asio::use_future).get());
   auto request = fetchpp::http::make_request(fetchpp::http::verb::get, url);
   fetchpp::http::response response;
   REQUIRE_THROWS_MATCHES(
