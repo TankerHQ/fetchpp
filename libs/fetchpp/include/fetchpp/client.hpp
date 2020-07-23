@@ -82,31 +82,32 @@ struct client_fetch_op
   }
 };
 
-template <typename Sessions>
+template <typename Session>
 struct client_stop_sessions_op
 {
-  Sessions& sessions;
+  std::deque<Session>& sessions_;
+  typename std::deque<Session>::iterator begin_ = {};
+  typename std::deque<Session>::iterator end_ = {};
   net::coroutine coro_ = {};
-  decltype(sessions.begin()) begin = sessions.begin();
-  decltype(sessions.end()) end = sessions.end();
 
   template <typename Self>
   void operator()(Self& self, error_code ec = {})
   {
     FETCHPP_REENTER(coro_)
     {
-      while (begin != end)
+      begin_ = sessions_.begin();
+      end_ = sessions_.end();
+      while (begin_ != end_)
       {
-        FETCHPP_YIELD begin->async_stop(std::move(self));
-        ++begin;
+        FETCHPP_YIELD begin_->async_stop(std::move(self));
+        ++begin_;
       }
       self.complete(ec);
     }
   }
 };
 template <typename Session>
-client_stop_sessions_op(std::deque<Session>)
-    ->client_stop_sessions_op<std::deque<Session>>;
+client_stop_sessions_op(std::deque<Session>&)->client_stop_sessions_op<Session>;
 
 template <typename SessionPool, typename CompletionToken>
 auto async_stop_session_pool(SessionPool& sessions, CompletionToken&& token)

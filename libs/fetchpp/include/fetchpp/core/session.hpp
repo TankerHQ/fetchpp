@@ -228,7 +228,7 @@ public:
   auto async_stop(CompletionToken&& token)
   {
     is_running_ = false;
-    return async_close(transport_, std::forward<CompletionToken>(token));
+    return transport_.async_close(std::forward<CompletionToken>(token));
   }
 
 private:

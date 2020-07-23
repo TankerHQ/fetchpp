@@ -14,6 +14,8 @@
 #include <fetchpp/alias/error_code.hpp>
 #include <fetchpp/alias/tcp.hpp>
 
+#include <cassert>
+
 namespace fetchpp
 {
 namespace detail
@@ -74,6 +76,7 @@ struct async_ssl_close_op
       {
         beast::get_lowest_layer(transport_).socket().cancel(ec);
         // ignore the error
+        assert(!ec);
         ec = {};
         FETCHPP_YIELD net::post(beast::bind_front_handler(std::move(self)));
         FETCHPP_YIELD transport_.next_layer().async_shutdown(std::move(self));
@@ -87,11 +90,7 @@ struct async_ssl_close_op
           // we most probably canceled our stream, which is now in an
           // inconsisent state. Forsake all etiquette, we want out anyway.
           ec = {};
-        if (ec)
-        {
-          self.complete(ec);
-          return;
-        }
+        assert(!ec);
         beast::close_socket(beast::get_lowest_layer(transport_));
       }
       else
@@ -125,7 +124,7 @@ auto do_async_connect(
 }
 
 template <typename NextLayer, typename DynamicBuffer, typename CompletionToken>
-auto async_close(
+auto do_async_close(
     basic_async_transport<beast::ssl_stream<NextLayer>, DynamicBuffer>& ts,
     CompletionToken&& token)
 {

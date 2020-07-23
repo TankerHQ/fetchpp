@@ -14,10 +14,9 @@ namespace fetchpp
 namespace detail
 {
 template <typename AsyncTransport>
-struct async_connect_op
+struct async_tcp_connect_op
 {
   AsyncTransport& transport_;
-  // FIXME
   std::unique_ptr<tcp::resolver::results_type> results_;
   net::coroutine coro_ = {};
 
@@ -39,7 +38,43 @@ struct async_connect_op
     }
   }
 };
+template <typename AsyncTransport>
+async_tcp_connect_op(AsyncTransport&,
+                     std::unique_ptr<tcp::resolver::results_type>)
+    ->async_tcp_connect_op<AsyncTransport>;
 
+template <typename AsyncTransport>
+struct async_tcp_close_op
+{
+  AsyncTransport& transport_;
+  net::coroutine coro_ = {};
+
+  template <typename Self>
+  void operator()(Self& self, error_code ec = {})
+  {
+    FETCHPP_REENTER(coro_)
+    {
+      if (beast::get_lowest_layer(transport_).socket().is_open())
+      {
+        beast::get_lowest_layer(transport_).socket().cancel(ec);
+        assert(!ec);
+        // ignore the error
+        ec = {};
+        // give a chance to canceled handler to finish
+        FETCHPP_YIELD net::post(beast::bind_front_handler(std::move(self)));
+        beast::close_socket(beast::get_lowest_layer(transport_));
+      }
+      else
+      {
+        transport_.resolver().cancel();
+        FETCHPP_YIELD net::post(beast::bind_front_handler(std::move(self)));
+      }
+      self.complete(ec);
+    }
+  }
+};
+template <typename AsyncTransport>
+async_tcp_close_op(AsyncTransport&)->async_tcp_close_op<AsyncTransport>;
 }
 
 template <typename Executor,
@@ -55,11 +90,10 @@ auto do_async_connect(
     CompletionToken&& token)
 {
   return net::async_compose<CompletionToken, void(error_code)>(
-      detail::async_connect_op<basic_async_transport<
-          beast::basic_stream<net::ip::tcp, Executor, RatePolicy>,
-          DynamicBuffer>>{ts,
-                          std::make_unique<tcp::resolver::results_type>(
-                              std::move(resolved_results))},
+      detail::async_tcp_connect_op{
+          ts,
+          std::make_unique<tcp::resolver::results_type>(
+              std::move(resolved_results))},
       token,
       ts);
 }
@@ -68,20 +102,13 @@ template <typename Executor,
           typename RatePolicy,
           typename DynamicBuffer,
           typename CompletionToken>
-auto async_close(basic_async_transport<
-                     beast::basic_stream<net::ip::tcp, Executor, RatePolicy>,
-                     DynamicBuffer>& ts,
-                 CompletionToken&& token)
+auto do_async_close(basic_async_transport<
+                        beast::basic_stream<net::ip::tcp, Executor, RatePolicy>,
+                        DynamicBuffer>& ts,
+                    CompletionToken&& token)
 {
-  net::async_completion<CompletionToken, void(error_code)> comp{token};
-  auto& layer = beast::get_lowest_layer(ts);
-
-  auto ec = error_code{};
-  layer.socket().cancel(ec);
-  beast::close_socket(layer);
-  net::post(beast::bind_front_handler(std::move(comp.completion_handler),
-                                      error_code{}));
-  return comp.result.get();
+  return net::async_compose<CompletionToken, void(error_code)>(
+      detail::async_tcp_close_op{ts}, token, ts);
 }
 
 using tcp_async_transport =

@@ -121,6 +121,24 @@ public:
         detail::async_basic_connect_op{endpoint, *this}, token, *this);
   }
 
+  template <typename CompletionToken>
+  auto async_close(CompletionToken&& token)
+  {
+    return net::async_compose<CompletionToken, void(error_code)>(
+        [this, coro_ = net::coroutine{}](auto& self,
+                                         error_code ec = {}) mutable {
+          FETCHPP_REENTER(coro_)
+          {
+            this->setup_timer();
+            FETCHPP_YIELD do_async_close(*this, std::move(self));
+            this->cancel_timer();
+            self.complete(ec);
+          }
+        },
+        token,
+        *this);
+  }
+
   next_layer_type& next_layer()
   {
     return stream_;
