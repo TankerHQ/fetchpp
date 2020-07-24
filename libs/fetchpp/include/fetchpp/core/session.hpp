@@ -26,8 +26,6 @@ namespace fetchpp
 {
 namespace detail
 {
-namespace
-{
 bool is_brutally_closed(error_code ec)
 {
   return ec == net::error::eof || ec == net::error::connection_reset ||
@@ -37,7 +35,6 @@ template <typename NextLayer>
 bool is_open(NextLayer const& layer)
 {
   return beast::get_lowest_layer(layer).socket().is_open();
-}
 }
 
 template <typename Session, typename Request, typename Response>

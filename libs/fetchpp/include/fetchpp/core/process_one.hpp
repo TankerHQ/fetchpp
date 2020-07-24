@@ -17,7 +17,6 @@ namespace fetchpp
 {
 namespace detail
 {
-
 template <typename AsyncStream,
           typename Buffer,
           typename Response,
@@ -71,38 +70,6 @@ struct process_one_stream_op
     }
   }
 };
-}
-
-template <typename AsyncStream,
-          typename Buffer,
-          typename Request,
-          typename Response,
-          typename CompletionToken>
-auto async_process_one(AsyncStream& stream,
-                       Buffer& buffer,
-                       Request& request,
-                       Response& response,
-                       CompletionToken&& token) ->
-    typename net::async_result<typename std::decay_t<CompletionToken>,
-                               void(error_code)>::return_type
-
-{
-  static_assert(beast::is_async_stream<AsyncStream>::value,
-                "AsyncStream type requirements not met");
-  static_assert(net::is_dynamic_buffer<Buffer>::value,
-                "Buffer type requirements not met");
-
-  return net::async_compose<CompletionToken, void(error_code)>(
-      detail::process_one_stream_op<AsyncStream, Request, Response, Buffer>{
-          stream, request, response, buffer},
-      token,
-      stream);
-}
-
-namespace detail
-{
-namespace
-{
 template <typename AsyncTransport, typename Request, typename Response>
 struct process_one_transport_op
 {
@@ -133,6 +100,31 @@ struct process_one_transport_op
   }
 };
 }
+
+template <typename AsyncStream,
+          typename Buffer,
+          typename Request,
+          typename Response,
+          typename CompletionToken>
+auto async_process_one(AsyncStream& stream,
+                       Buffer& buffer,
+                       Request& request,
+                       Response& response,
+                       CompletionToken&& token) ->
+    typename net::async_result<typename std::decay_t<CompletionToken>,
+                               void(error_code)>::return_type
+
+{
+  static_assert(beast::is_async_stream<AsyncStream>::value,
+                "AsyncStream type requirements not met");
+  static_assert(net::is_dynamic_buffer<Buffer>::value,
+                "Buffer type requirements not met");
+
+  return net::async_compose<CompletionToken, void(error_code)>(
+      detail::process_one_stream_op<AsyncStream, Request, Response, Buffer>{
+          stream, request, response, buffer},
+      token,
+      stream);
 }
 
 template <typename AsyncTransport,
