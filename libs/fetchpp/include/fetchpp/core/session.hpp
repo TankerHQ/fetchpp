@@ -26,17 +26,6 @@ namespace fetchpp
 {
 namespace detail
 {
-bool is_brutally_closed(error_code ec)
-{
-  return ec == net::error::eof || ec == net::error::connection_reset ||
-         ec == net::ssl::error::stream_truncated;
-}
-template <typename NextLayer>
-bool is_open(NextLayer const& layer)
-{
-  return beast::get_lowest_layer(layer).socket().is_open();
-}
-
 template <typename Session, typename Request, typename Response>
 struct process_queue_op
 {
@@ -57,7 +46,7 @@ struct process_queue_op
     }
     FETCHPP_REENTER(coro_)
     {
-      if (!is_open(session_.transport_))
+      if (!session_.transport_.is_open())
       {
         FETCHPP_YIELD session_.async_start(std::move(self));
         if (ec)

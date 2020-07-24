@@ -18,6 +18,8 @@
 
 namespace fetchpp
 {
+bool is_brutally_closed(error_code ec);
+
 namespace detail
 {
 template <typename AsyncTransport>
@@ -167,6 +169,11 @@ public:
   void cancel_timer()
   {
     get_lowest_layer(stream_).expires_never();
+  }
+
+  bool is_open()
+  {
+    return beast::get_lowest_layer(next_layer()).socket().is_open();
   }
 
   auto const& timeout() const

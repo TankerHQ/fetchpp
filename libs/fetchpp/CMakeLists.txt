@@ -18,11 +18,14 @@ add_library(fetchpp
   include/fetchpp/core/field_arg.hpp
   include/fetchpp/core/endpoint.hpp
   include/fetchpp/core/connect.hpp
+  include/fetchpp/core/basic_transport.hpp
+  include/fetchpp/core/ssl_transport.hpp
+  include/fetchpp/core/tcp_transport.hpp
   include/fetchpp/core/transport_traits.hpp
   include/fetchpp/core/options.hpp
   include/fetchpp/core/process_one.hpp
   include/fetchpp/core/redirect_handling.hpp
-  
+
   include/fetchpp/http/detail/json_body.hpp
   include/fetchpp/http/authorization.hpp
   include/fetchpp/http/content_type.hpp
@@ -44,6 +47,7 @@ add_library(fetchpp
   src/core/cache_mode.cpp
   src/core/endpoint.cpp
   src/core/session_work_queue.cpp
+  src/core/basic_transport.cpp
   src/core/client.cpp
   src/core/fetch.cpp
   src/http/detail/json_body.cpp

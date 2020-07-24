@@ -54,7 +54,7 @@ struct async_tcp_close_op
   {
     FETCHPP_REENTER(coro_)
     {
-      if (beast::get_lowest_layer(transport_).socket().is_open())
+      if (transport_.is_open())
       {
         beast::get_lowest_layer(transport_).socket().cancel(ec);
         assert(!ec);
