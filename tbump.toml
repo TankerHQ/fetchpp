@@ -1,8 +1,8 @@
 [version]
-current = "dev"
+current = "0.8.1"
 
 regex = '''
-  (dev)
+  (0.8.1)
   |
   (
     (?P<major>\d+)
