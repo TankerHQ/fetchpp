@@ -12,6 +12,8 @@ public:
   {
     virtual ~work() = 0;
 
+    virtual void cancel() = 0;
+
     virtual void operator()(session_work_queue&) = 0;
   };
   using work_ptr = std::unique_ptr<work>;
@@ -19,6 +21,7 @@ public:
   void advance();
   void push(work_ptr);
   void consume();
+  void cancel_all();
   std::size_t size() const;
 
 private:

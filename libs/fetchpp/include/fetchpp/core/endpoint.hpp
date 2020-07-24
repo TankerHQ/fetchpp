@@ -15,7 +15,7 @@ public:
 
   std::string const& domain() const;
   std::uint16_t port() const;
-  std::string_view host() const;
+  std::string host() const;
 
 private:
   std::string domain_;

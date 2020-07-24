@@ -40,7 +40,7 @@ TEST_CASE_METHOD(ioc_fixture, "connect timeouts", "[transport][http][timeout]")
       HasErrorCode(boost::beast::error::timeout));
   auto const end = std::chrono::high_resolution_clock::now();
   REQUIRE((650ms) > (end - now));
-  REQUIRE_NOTHROW(async_close(ts, boost::asio::use_future).get());
+  REQUIRE_NOTHROW(ts.async_close(boost::asio::use_future).get());
 }
 
 TEST_CASE_METHOD(ioc_fixture, "transport one ssl", "[transport][https]")
@@ -58,7 +58,7 @@ TEST_CASE_METHOD(ioc_fixture, "transport one ssl", "[transport][https]")
       fetchpp::async_process_one(ts, request, response, boost::asio::use_future)
           .get());
   CHECK(response.result_int() == 200);
-  REQUIRE_NOTHROW(async_close(ts, boost::asio::use_future).get());
+  REQUIRE_NOTHROW(ts.async_close(boost::asio::use_future).get());
 }
 
 TEST_CASE_METHOD(ioc_fixture, "transport one tcp", "[transport][http]")
@@ -75,7 +75,7 @@ TEST_CASE_METHOD(ioc_fixture, "transport one tcp", "[transport][http]")
       fetchpp::async_process_one(ts, request, response, boost::asio::use_future)
           .get());
   CHECK(response.result_int() == 200);
-  REQUIRE_NOTHROW(async_close(ts, boost::asio::use_future).get());
+  REQUIRE_NOTHROW(ts.async_close(boost::asio::use_future).get());
 }
 
 TEST_CASE_METHOD(ioc_fixture,
@@ -98,7 +98,7 @@ TEST_CASE_METHOD(ioc_fixture,
       HasErrorCode(boost::beast::error::timeout));
   auto const end = std::chrono::high_resolution_clock::now();
   REQUIRE(1.5s > end - now);
-  REQUIRE_NOTHROW(async_close(ts, boost::asio::use_future).get());
+  REQUIRE_NOTHROW(ts.async_close(boost::asio::use_future).get());
 }
 
 TEST_CASE_METHOD(ioc_fixture,

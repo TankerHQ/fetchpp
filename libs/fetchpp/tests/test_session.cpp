@@ -189,4 +189,5 @@ TEST_CASE_METHOD(ioc_fixture,
       boost::system::system_error,
       HasErrorCode(boost::beast::error::timeout) ||
           HasErrorCode(boost::asio::ssl::error::stream_truncated));
+  REQUIRE(session.pending_requests() == 0);
 }

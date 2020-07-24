@@ -81,6 +81,67 @@ struct client_fetch_op
     this->complete(false, ec, std::move(res));
   }
 };
+
+template <typename Session>
+struct client_stop_sessions_op
+{
+  std::deque<Session>& sessions_;
+  typename std::deque<Session>::iterator begin_ = {};
+  typename std::deque<Session>::iterator end_ = {};
+  net::coroutine coro_ = {};
+
+  template <typename Self>
+  void operator()(Self& self, error_code ec = {})
+  {
+    FETCHPP_REENTER(coro_)
+    {
+      begin_ = sessions_.begin();
+      end_ = sessions_.end();
+      while (begin_ != end_)
+      {
+        FETCHPP_YIELD begin_->async_stop(std::move(self));
+        ++begin_;
+      }
+      self.complete(ec);
+    }
+  }
+};
+template <typename Session>
+client_stop_sessions_op(std::deque<Session>&)->client_stop_sessions_op<Session>;
+
+template <typename SessionPool, typename CompletionToken>
+auto async_stop_session_pool(SessionPool& sessions, CompletionToken&& token)
+{
+  return net::async_compose<CompletionToken, void(error_code)>(
+      client_stop_sessions_op{sessions}, token);
+}
+
+template <typename SecureSessions, typename PlainSessions>
+struct client_stop_op
+{
+  SecureSessions& secure_sessions_;
+  PlainSessions& plain_sessions_;
+  net::coroutine coro_ = {};
+
+  template <typename Self>
+  void operator()(Self& self, error_code ec = {})
+  {
+    if (ec)
+    {
+      self.complete(ec);
+      return;
+    }
+    FETCHPP_REENTER(coro_)
+    {
+      FETCHPP_YIELD async_stop_session_pool(secure_sessions_, std::move(self));
+      FETCHPP_YIELD async_stop_session_pool(plain_sessions_, std::move(self));
+      self.complete(ec);
+    }
+  }
+};
+template <typename Session1, typename Session2>
+client_stop_op(std::deque<Session1>&, std::deque<Session2>&)
+    ->client_stop_op<std::deque<Session1>, std::deque<Session2>>;
 }
 
 class client
@@ -107,6 +168,15 @@ public:
   void set_max_pending_per_session(std::size_t pending)
   {
     max_pending_ = pending;
+  }
+
+  template <typename CompletionToken>
+  auto async_stop(CompletionToken&& token)
+  {
+    return net::async_compose<CompletionToken, void(error_code)>(
+        detail::client_stop_op{secure_sessions_, plain_sessions_},
+        token,
+        strand_);
   }
 
 private:
