@@ -9,13 +9,13 @@
 using fetchpp::http::safe_port;
 using fetchpp::http::url;
 
-TEST_CASE("default_port", "[url]")
+TEST_CASE("default_port", "[url][default_port]")
 {
   REQUIRE(url::default_port("http") == 80);
   REQUIRE(url::default_port("https") == 443);
 }
 
-TEST_CASE("parse url with port", "[url]")
+TEST_CASE("parse url with port", "[url][port]")
 {
   REQUIRE(url("https://example.com:82").port() == "82");
   REQUIRE(url("https://example.com:82").port<std::int16_t>().value() == 82);
@@ -24,7 +24,7 @@ TEST_CASE("parse url with port", "[url]")
   REQUIRE(safe_port(url("https://example.com")) == 443);
 }
 
-TEST_CASE("parse url domain", "[url]")
+TEST_CASE("parse url domain", "[url][domain]")
 {
   REQUIRE(url("https://www.example.com").domain().value() == "www.example.com");
   REQUIRE(url("https://www.example.com:4242").domain().value() ==
@@ -32,15 +32,15 @@ TEST_CASE("parse url domain", "[url]")
   REQUIRE(url("https://192.168.1.9:4242").domain().has_value() == false);
 }
 
-TEST_CASE("parse url host", "[url]")
+TEST_CASE("parse url host", "[url][host]")
 {
   REQUIRE(url("https://www.example.com").host() == "www.example.com");
   REQUIRE(url("https://www.example.com:4242").host() == "www.example.com:4242");
-  REQUIRE(url("https://192.168.1.9").host() == "192.168.1.9");
   REQUIRE(url("https://192.168.1.9:4242").host() == "192.168.1.9:4242");
+  REQUIRE(url("https://192.168.1.9").host() == "192.168.1.9");
 }
 
-TEST_CASE("parse url hostname", "[url]")
+TEST_CASE("parse url hostname", "[url][hostname]")
 {
   REQUIRE(url("https://www.example.com").hostname() == "www.example.com");
   REQUIRE(url("https://www.example.com:4242").hostname() == "www.example.com");
@@ -48,29 +48,34 @@ TEST_CASE("parse url hostname", "[url]")
   REQUIRE(url("https://192.168.1.9").hostname() == "192.168.1.9");
 }
 
-TEST_CASE("parse url protocol", "[url]")
+TEST_CASE("parse url origin", "[url][origin]")
+{
+  REQUIRE(url("https://www.example.com").origin() == "https://www.example.com");
+  REQUIRE(url("https://www.example.com:4242").origin() == "https://www.example.com:4242");
+  REQUIRE(url("https://192.168.1.9:4242").origin() == "https://192.168.1.9:4242");
+  REQUIRE(url("https://192.168.1.9").origin() == "https://192.168.1.9");
+}
+
+TEST_CASE("parse url protocol", "[url][protocol]")
 {
   REQUIRE(url("https://www.example.com").protocol() == "https:");
   REQUIRE(url("http://www.example.com").protocol() == "http:");
   REQUIRE(url("wss://www.example.com").protocol() == "wss:");
 }
 
-TEST_CASE("build a url with a base", "[url]")
+TEST_CASE("build a url with a base", "[url][base_url]")
 {
-  auto uri = url("Mexico/Mexico_City?temperature=celcius",
-                 url("https://www.vacances.com"));
-  REQUIRE(uri.protocol() == "https:");
-  REQUIRE(uri.href() ==
+  REQUIRE(url("Mexico/Mexico_City?temperature=celcius",
+                 url("https://www.vacances.com/Paris")).href() ==
           "https://www.vacances.com/Mexico/Mexico_City?temperature=celcius");
-}
 
-TEST_CASE("build a url with a base and a domain", "[url]")
-{
-  auto uri = url("https://example.com/Mexico/Mexico_City?temperature=celcius",
-                 url("https://www.vacances.com"));
-  REQUIRE(uri.protocol() == "https:");
-  REQUIRE(uri.href() ==
-          "https://example.com/Mexico/Mexico_City?temperature=celcius");
+  REQUIRE(url("Mexico/Mexico_City?temperature=celcius",
+                 url("https://www.vacances.com/Paris/")).href() ==
+          "https://www.vacances.com/Paris/Mexico/Mexico_City?temperature=celcius");
+
+  REQUIRE(url("/Mexico/Mexico_City?temperature=celcius",
+                 url("https://www.vacances.com/Paris/")).href() ==
+          "https://www.vacances.com/Mexico/Mexico_City?temperature=celcius");
 }
 
 TEST_CASE("encode url query", "[url][query]")
