@@ -43,7 +43,7 @@ private:
 inline constexpr std::optional<std::string_view> select_content_type(
     json_wrapper const&)
 {
-  return "application/json";
+  return "application/json; charset=utf-8";
 }
 
 class json_reader

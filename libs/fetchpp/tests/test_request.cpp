@@ -82,6 +82,6 @@ TEST_CASE("request content_type", "[request]")
   auto const req = fetchpp::http::make_request<
       fetchpp::http::request<fetchpp::http::json_body>>(
       fetchpp::http::verb::get, fetchpp::http::url("http://toto.com"), {});
-  REQUIRE(req[fetchpp::http::field::content_type] == "application/json");
+  REQUIRE(req[fetchpp::http::field::content_type] == "application/json; charset=utf-8");
   REQUIRE(req.has_content_length());
 }
