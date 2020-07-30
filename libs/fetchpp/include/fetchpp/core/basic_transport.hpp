@@ -40,12 +40,6 @@ struct async_basic_connect_op
       self.complete(ec);
       return;
     }
-    if (!transport_.running_)
-    {
-      transport_.cancel_timer();
-      self.complete(net::error::operation_aborted);
-      return;
-    }
     FETCHPP_REENTER(coro_)
     {
       transport_.set_running(true);
@@ -131,6 +125,7 @@ public:
                                          error_code ec = {}) mutable {
           FETCHPP_REENTER(coro_)
           {
+            set_running(false);
             this->setup_timer();
             FETCHPP_YIELD do_async_close(*this, std::move(self));
             this->cancel_timer();

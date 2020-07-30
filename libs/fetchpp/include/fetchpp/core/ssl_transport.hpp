@@ -71,7 +71,6 @@ struct async_ssl_close_op
   {
     FETCHPP_REENTER(coro_)
     {
-      transport_.set_running(false);
       if (transport_.is_open())
       {
         beast::get_lowest_layer(transport_).socket().cancel(ec);

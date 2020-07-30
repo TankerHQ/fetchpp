@@ -15,4 +15,9 @@ std::int16_t safe_port(url const& uri);
 
 nlohmann::json decode_query(std::string_view);
 std::string encode_query(nlohmann::json const&);
+
+namespace url_literals
+{
+using namespace skyr::literals;
+}
 }
