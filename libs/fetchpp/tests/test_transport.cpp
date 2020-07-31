@@ -27,6 +27,7 @@ using namespace test::helpers::http_literals;
 
 using test::helpers::HasErrorCode;
 using test::helpers::ioc_fixture;
+using URL = fetchpp::http::url;
 
 TEST_CASE_METHOD(ioc_fixture, "connect timeouts", "[transport][http][timeout]")
 {
@@ -45,7 +46,7 @@ TEST_CASE_METHOD(ioc_fixture, "connect timeouts", "[transport][http][timeout]")
 
 TEST_CASE_METHOD(ioc_fixture, "transport one ssl", "[transport][https]")
 {
-  auto const url = fetchpp::http::url("get"_https);
+  auto const url = URL("get"_https);
   ssl::context context(ssl::context::tlsv12_client);
 
   fetchpp::ssl_async_transport ts(5s, ioc, context);
@@ -63,7 +64,7 @@ TEST_CASE_METHOD(ioc_fixture, "transport one ssl", "[transport][https]")
 
 TEST_CASE_METHOD(ioc_fixture, "transport one tcp", "[transport][http]")
 {
-  auto const url = fetchpp::http::url("get"_http);
+  auto const url = URL("get"_http);
 
   fetchpp::tcp_async_transport ts(5s, ioc);
   auto endpoint = fetchpp::detail::to_endpoint<false>(url);
@@ -82,7 +83,7 @@ TEST_CASE_METHOD(ioc_fixture,
                  "transport one tcp over timeout",
                  "[transport][http][delay]")
 {
-  auto const url = fetchpp::http::url("delay/5"_http);
+  auto const url = URL("delay/5"_http);
 
   fetchpp::tcp_async_transport ts(1s, ioc);
   auto endpoint = fetchpp::detail::to_endpoint<false>(url);
@@ -105,7 +106,7 @@ TEST_CASE_METHOD(ioc_fixture,
                  "transport one ssl over timeout",
                  "[transport][https][delay]")
 {
-  auto const url = fetchpp::http::url("delay/5"_https);
+  auto const url = URL("delay/5"_https);
   ssl::context context(ssl::context::tlsv12_client);
 
   fetchpp::ssl_async_transport ts(1s, ioc, context);
@@ -122,4 +123,24 @@ TEST_CASE_METHOD(ioc_fixture,
       HasErrorCode(boost::beast::error::timeout));
   auto const end = std::chrono::high_resolution_clock::now();
   REQUIRE(1.5s > end - now);
+}
+
+TEST_CASE_METHOD(ioc_fixture,
+                 "transport closes and reopens",
+                 "[transport][http][close]")
+{
+  auto const url = URL("get"_https);
+  ssl::context context(ssl::context::tlsv12_client);
+
+  fetchpp::ssl_async_transport ts(5s, ioc, context);
+  auto endpoint = fetchpp::detail::to_endpoint<true>(url);
+  REQUIRE_NOTHROW(ts.async_connect(endpoint, boost::asio::use_future).get());
+  auto const request =
+      fetchpp::http::make_request(fetchpp::http::verb::get, url);
+  fetchpp::http::response response;
+  REQUIRE_NOTHROW(
+      fetchpp::async_process_one(ts, request, response, boost::asio::use_future)
+          .get());
+  REQUIRE_NOTHROW(ts.async_close(boost::asio::use_future).get());
+  REQUIRE_NOTHROW(ts.async_connect(endpoint, boost::asio::use_future).get());
 }

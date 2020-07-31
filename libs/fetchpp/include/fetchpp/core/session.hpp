@@ -32,23 +32,24 @@ struct process_queue_op
   Session& session_;
   Request& request_;
   Response& response_;
-  error_code last_ec = {};
+  error_code last_ec_ = {};
   net::coroutine coro_ = {};
 
   template <typename Self>
   void operator()(Self& self, error_code ec = {})
   {
-    if (ec == net::error::operation_aborted)
+    if (!session_.is_running_ || ec == net::error::operation_aborted)
     {
       session_.work_queue_.cancel_all();
-      self.complete(ec);
+      self.complete(net::error::operation_aborted);
       return;
     }
+
     FETCHPP_REENTER(coro_)
     {
-      if (!session_.transport_.is_open())
+      if (!session_.transport_.is_open() && session_.is_running_)
       {
-        FETCHPP_YIELD session_.async_start(std::move(self));
+        FETCHPP_YIELD session_.async_transport_connect(std::move(self));
         if (ec)
         {
           session_.work_queue_.cancel_all();
@@ -56,31 +57,21 @@ struct process_queue_op
           return;
         }
       }
+
       FETCHPP_YIELD async_process_one(
           session_.transport_, request_, response_, std::move(self));
-      if (ec && ec != beast::error::timeout &&
-          ec != net::error::operation_aborted)
-      {
-        last_ec = ec;
-        FETCHPP_YIELD session_.async_stop(std::move(self));
-        ec = last_ec;
-      }
 
-      if (is_brutally_closed(ec) && !session_.first_round_)
+      if (is_brutally_closed(ec))
       {
-        FETCHPP_YIELD
-        {
-          auto const real_ec = ec;
-          session_.async_stop(std::move(self));
-          // we ignore the async_stop() ec
-          ec = real_ec;
-        }
+        last_ec_ = ec;
+        FETCHPP_YIELD session_.transport_.async_close(std::move(self));
+        ec = last_ec_;
         if (!session_.first_round_)
         {
           // we reset the coroutine state to try a re-connection
           coro_ = {};
           session_.first_round_ = true;
-          net::post(beast::bind_front_handler(std::move(self), ec));
+          net::post(beast::bind_front_handler(std::move(self), error_code{}));
           return;
         }
       }
@@ -179,19 +170,20 @@ public:
   auto push_request(Request& req, Response& res, CompletionToken&& token)
   {
     net::async_completion<CompletionToken, void(error_code)> comp{token};
-    if (!is_running_)
-    {
-      net::post(get_executor(),
-                beast::bind_front_handler(std::move(comp.completion_handler),
-                                          net::error::operation_aborted));
-    }
-    else
-    {
-      // FIXME: move that to the session strand
-      req.keep_alive(true);
-      work_queue_.push(detail::make_work(
-          *this, req, res, std::move(comp.completion_handler)));
-    }
+    net::post(get_executor(),
+              [this,
+               &req,
+               &res,
+               handler = std::move(comp.completion_handler)]() mutable {
+                if (!is_running_)
+                  handler(net::error::operation_aborted);
+                else
+                {
+                  req.keep_alive(true);
+                  work_queue_.push(
+                      detail::make_work(*this, req, res, std::move(handler)));
+                }
+              });
     return comp.result.get();
   }
 
@@ -213,13 +205,40 @@ public:
   template <typename CompletionToken>
   auto async_stop(CompletionToken&& token)
   {
-    is_running_ = false;
-    return transport_.async_close(std::forward<CompletionToken>(token));
+    return net::async_compose<CompletionToken, void(error_code)>(
+        [this, coro_ = net::coroutine{}](auto& self,
+                                         error_code ec = {}) mutable {
+          FETCHPP_REENTER(coro_)
+          {
+            is_running_ = false;
+            FETCHPP_YIELD transport_.async_close(std::move(self));
+            self.complete(ec);
+          }
+        },
+        token,
+        *this);
+  }
+
+  template <typename CompletionToken>
+  auto async_start(CompletionToken&& token)
+  {
+    return net::async_compose<CompletionToken, void(error_code)>(
+        [this, coro_ = net::coroutine{}](auto& self,
+                                         error_code ec = {}) mutable {
+          FETCHPP_REENTER(coro_)
+          {
+            is_running_ = true;
+            FETCHPP_YIELD this->async_transport_connect(std::move(self));
+            self.complete(ec);
+          }
+        },
+        token,
+        *this);
   }
 
 private:
   template <typename CompletionToken>
-  auto async_start(CompletionToken&& token)
+  auto async_transport_connect(CompletionToken&& token)
   {
     return transport_.async_connect(endpoint_,
                                     std::forward<CompletionToken>(token));
