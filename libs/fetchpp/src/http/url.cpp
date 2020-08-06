@@ -8,6 +8,12 @@
 
 namespace fetchpp::http
 {
+
+url::string_type url::target() const
+{
+  return this->pathname() + this->search() + this->hash();
+}
+
 std::int16_t safe_port(url const& uri)
 {
   if (uri.port().empty())

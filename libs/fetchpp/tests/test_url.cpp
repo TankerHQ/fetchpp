@@ -40,6 +40,15 @@ TEST_CASE("parse url host", "[url][host]")
   REQUIRE(url("https://192.168.1.9").host() == "192.168.1.9");
 }
 
+TEST_CASE("parse url target", "[url][target]")
+{
+  REQUIRE(url("https://www.example.com/path?hellow=world#ancre").target() ==
+          "/path?hellow=world#ancre");
+  REQUIRE(
+      url("https://www.example.com/path?hellow=world&goodbye#ancre").target() ==
+      "/path?hellow=world&goodbye#ancre");
+}
+
 TEST_CASE("parse url hostname", "[url][hostname]")
 {
   REQUIRE(url("https://www.example.com").hostname() == "www.example.com");
@@ -51,8 +60,10 @@ TEST_CASE("parse url hostname", "[url][hostname]")
 TEST_CASE("parse url origin", "[url][origin]")
 {
   REQUIRE(url("https://www.example.com").origin() == "https://www.example.com");
-  REQUIRE(url("https://www.example.com:4242").origin() == "https://www.example.com:4242");
-  REQUIRE(url("https://192.168.1.9:4242").origin() == "https://192.168.1.9:4242");
+  REQUIRE(url("https://www.example.com:4242").origin() ==
+          "https://www.example.com:4242");
+  REQUIRE(url("https://192.168.1.9:4242").origin() ==
+          "https://192.168.1.9:4242");
   REQUIRE(url("https://192.168.1.9").origin() == "https://192.168.1.9");
 }
 
@@ -66,19 +77,23 @@ TEST_CASE("parse url protocol", "[url][protocol]")
 TEST_CASE("build a url with a base", "[url][base_url]")
 {
   REQUIRE(url("Mexico/Mexico_City?temperature=celcius",
-                 url("https://www.vacances.com/Paris")).href() ==
+              url("https://www.vacances.com/Paris"))
+              .href() ==
           "https://www.vacances.com/Mexico/Mexico_City?temperature=celcius");
 
-  REQUIRE(url("Mexico/Mexico_City?temperature=celcius",
-                 url("https://www.vacances.com/Paris/")).href() ==
-          "https://www.vacances.com/Paris/Mexico/Mexico_City?temperature=celcius");
+  REQUIRE(
+      url("Mexico/Mexico_City?temperature=celcius",
+          url("https://www.vacances.com/Paris/"))
+          .href() ==
+      "https://www.vacances.com/Paris/Mexico/Mexico_City?temperature=celcius");
 
   REQUIRE(url("/Mexico/Mexico_City?temperature=celcius",
-                 url("https://www.vacances.com/Paris/")).href() ==
+              url("https://www.vacances.com/Paris/"))
+              .href() ==
           "https://www.vacances.com/Mexico/Mexico_City?temperature=celcius");
 }
 
-TEST_CASE("encode url query", "[url][query]")
+TEST_CASE("decode url query", "[url][query]")
 {
   auto const uri = url("https://www.example.com?a=b&e=f&c=d&e=z");
   auto j = fetchpp::http::decode_query(uri.search());
@@ -92,7 +107,7 @@ TEST_CASE("encode url query", "[url][query]")
           std::vector<std::string>({"f", "z"}));
 }
 
-TEST_CASE("decode url query", "[url][query]")
+TEST_CASE("encode url query", "[url][query]")
 {
   auto query = nlohmann::json({{"a", "b"}, {"c", "d"}, {"e", {"f", "z"}}});
   auto const result = fetchpp::http::encode_query(query);

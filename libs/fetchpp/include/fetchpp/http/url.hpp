@@ -8,7 +8,16 @@
 
 namespace fetchpp::http
 {
-using skyr::url;
+
+class url : public skyr::url
+{
+  using base_t = skyr::url;
+
+public:
+  using string_type = base_t::string_type;
+  using skyr::url::url;
+  string_type target() const;
+};
 
 bool is_ssl_involved(url const& uri);
 std::int16_t safe_port(url const& uri);
