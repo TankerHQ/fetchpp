@@ -62,7 +62,7 @@ inline auto make_request(http::verb verb, url uri, options opt = {})
 template <typename BodyType>
 request<BodyType>::request(http::verb verb, url uri, fetchpp::options opt)
   : base_t(verb,
-           uri.pathname(),
+           uri.target(),
            static_cast<std::underlying_type_t<http_version>>(opt.version)),
     _uri(std::move(uri)),
     _opt(std::move(opt))
