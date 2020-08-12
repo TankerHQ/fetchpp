@@ -31,8 +31,8 @@ public:
   json_wrapper& operator=(json_wrapper&&) = default;
   json_wrapper() = default;
 
-  json_wrapper& operator=(json_wrapper const&) = delete;
-  json_wrapper(json_wrapper const&) = delete;
+  json_wrapper& operator=(json_wrapper const&) = default;
+  json_wrapper(json_wrapper const&) = default;
 
   std::string const& get_dump() const;
 
