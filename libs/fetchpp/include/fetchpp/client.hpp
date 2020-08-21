@@ -234,7 +234,7 @@ public:
 
   executor_type strand_;
   std::chrono::nanoseconds timeout_;
-  std::size_t max_pending_ = 2u;
+  std::size_t max_pending_ = 10u;
   net::ssl::context context_;
   std::deque<session<plain_endpoint, tcp_async_transport>> plain_sessions_;
   std::deque<session<secure_endpoint, ssl_async_transport>> secure_sessions_;
