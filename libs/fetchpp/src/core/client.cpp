@@ -29,6 +29,11 @@ client::client(net::io_context& ioc,
 {
 }
 
+net::ssl::context& client::context()
+{
+  return this->context_;
+}
+
 auto client::get_executor() const -> executor_type
 {
   return strand_;

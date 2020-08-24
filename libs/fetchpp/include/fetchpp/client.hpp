@@ -232,6 +232,9 @@ public:
     return plain_sessions_.size() + secure_sessions_.size();
   }
 
+  net::ssl::context& context();
+
+private:
   executor_type strand_;
   std::chrono::nanoseconds timeout_;
   std::size_t max_pending_ = 10u;
