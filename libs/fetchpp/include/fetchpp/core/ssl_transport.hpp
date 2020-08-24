@@ -92,6 +92,8 @@ struct async_ssl_close_op
           // we most probably canceled our stream, which is now in an
           // inconsisent state. Forsake all etiquette, we want out anyway.
           ec = {};
+        else if (ec == net::error::operation_aborted)
+          ec = {};
         assert(!ec);
         beast::close_socket(beast::get_lowest_layer(transport_));
       }
