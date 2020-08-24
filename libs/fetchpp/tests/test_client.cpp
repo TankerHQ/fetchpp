@@ -94,12 +94,12 @@ TEST_CASE_METHOD(ioc_fixture,
   for (int i = 0; i < 10; ++i)
     futures.push_back(cl.async_fetch(delayrequest, boost::asio::use_future));
 
-  REQUIRE_NOTHROW(cl.async_stop(boost::asio::use_future));
+  std::future<void> closeFut;
+  REQUIRE_NOTHROW(closeFut = cl.async_stop(boost::asio::use_future));
 
   for (auto& future : futures)
     future.wait();
-  // we keep that to not destroy client before connections die
-  std::this_thread::sleep_for(500ms);
+  closeFut.get();
 }
 
 TEST_CASE_METHOD(ioc_fixture,
