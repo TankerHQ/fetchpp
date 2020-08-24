@@ -119,7 +119,6 @@ struct fetch_composer_with_ssl
   template <typename Self>
   void operator()(Self& self)
   {
-    // sslc.set_verify_mode(context::verify_peer);
     async_fetch_impl<secure_endpoint, ssl_async_transport, Response>(
         detail::to_endpoint<true>(request.uri()),
         ssl_async_transport(std::chrono::seconds(30), ex, sslc),

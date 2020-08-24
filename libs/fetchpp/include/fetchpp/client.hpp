@@ -232,6 +232,8 @@ public:
     return plain_sessions_.size() + secure_sessions_.size();
   }
 
+  void set_verify_peer(bool v);
+
   net::ssl::context& context();
 
 private:
