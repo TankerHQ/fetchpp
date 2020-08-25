@@ -2,6 +2,6 @@
 
 namespace fetchpp
 {
-static constexpr auto VERSION = "dev";
-static constexpr auto USER_AGENT = "fetchpp/dev";
+static constexpr auto VERSION = "0.9.2";
+static constexpr auto USER_AGENT = "fetchpp/0.9.2";
 }

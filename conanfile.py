@@ -3,7 +3,7 @@ from conans import ConanFile, CMake, tools
 
 class FetchppConan(ConanFile):
     name = "fetchpp"
-    version = "dev"
+    version = "0.9.2"
     license = "Apache 2.0"
     author = "alexandre.bossard@tanker.io"
     description = "the simplest http client"
