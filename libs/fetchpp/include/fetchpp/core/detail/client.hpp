@@ -9,6 +9,8 @@
 
 #include <fetchpp/alias/beast.hpp>
 
+#include <boost/variant2/variant.hpp>
+
 #include <deque>
 
 namespace fetchpp::detail
@@ -45,17 +47,20 @@ struct client_fetch_op
       coro(),
       data(beast::allocate_stable<data_t>(*this, client, std::move(req)))
   {
-    if (auto const& uri = data.req.uri(); http::is_ssl_involved(uri))
-      start(to_endpoint<true>(uri));
-    else
-      start(to_endpoint<false>(uri));
-  }
+    auto push_request = [&](auto& s) {
+      s.push_request(data.req, data.res, std::move(*this));
+    };
 
-  template <bool isSecure>
-  void start(basic_endpoint<isSecure> endpoint)
-  {
-    auto& session = data.client.get_session(std::move(endpoint));
-    session.push_request(data.req, data.res, std::move(*this));
+    if (auto const& uri = data.req.uri(); http::is_ssl_involved(uri))
+    {
+      auto& session = data.client.get_session(to_endpoint<true>(uri));
+      boost::variant2::visit(push_request, session);
+    }
+    else
+    {
+      auto& session = data.client.get_session(to_endpoint<false>(uri));
+      boost::variant2::visit(push_request, session);
+    }
   }
 
   void operator()(error_code ec = {})
@@ -83,7 +88,8 @@ struct client_stop_sessions_op
       end_ = sessions_.end();
       while (begin_ != end_)
       {
-        FETCHPP_YIELD begin_->async_stop(std::move(self));
+        FETCHPP_YIELD boost::variant2::visit(
+            [&](auto& v) { return v.async_stop(std::move(self)); }, *begin_);
         ++begin_;
       }
       self.complete(ec);
@@ -99,31 +105,4 @@ auto async_stop_session_pool(SessionPool& sessions, CompletionToken&& token)
   return net::async_compose<CompletionToken, void(error_code)>(
       client_stop_sessions_op{sessions}, token);
 }
-
-template <typename SecureSessions, typename PlainSessions>
-struct client_stop_op
-{
-  SecureSessions& secure_sessions_;
-  PlainSessions& plain_sessions_;
-  net::coroutine coro_ = {};
-
-  template <typename Self>
-  void operator()(Self& self, error_code ec = {})
-  {
-    if (ec)
-    {
-      self.complete(ec);
-      return;
-    }
-    FETCHPP_REENTER(coro_)
-    {
-      FETCHPP_YIELD async_stop_session_pool(secure_sessions_, std::move(self));
-      FETCHPP_YIELD async_stop_session_pool(plain_sessions_, std::move(self));
-      self.complete(ec);
-    }
-  }
-};
-template <typename Session1, typename Session2>
-client_stop_op(std::deque<Session1>&, std::deque<Session2>&)
-    ->client_stop_op<std::deque<Session1>, std::deque<Session2>>;
 }

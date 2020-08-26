@@ -4,9 +4,9 @@
 #include <fetchpp/core/session.hpp>
 #include <fetchpp/http/response.hpp>
 
-#include <boost/asio/strand.hpp>
-
 #include <boost/asio/ssl/context.hpp>
+#include <boost/asio/strand.hpp>
+#include <boost/variant2/variant.hpp>
 
 #include <fetchpp/alias/error_code.hpp>
 #include <fetchpp/alias/net.hpp>
@@ -14,7 +14,6 @@
 
 #include <chrono>
 #include <deque>
-#include <memory>
 
 namespace fetchpp
 {
@@ -30,6 +29,11 @@ public:
          std::chrono::nanoseconds,
          net::ssl::context context);
 
+  using plain_session = session<plain_endpoint, tcp_async_transport>;
+  using secure_session = session<secure_endpoint, ssl_async_transport>;
+  using session_adapter =
+      boost::variant2::variant<plain_session, secure_session>;
+
   using executor_type = net::strand<net::executor>;
 
   executor_type get_executor() const;
@@ -43,41 +47,48 @@ public:
   auto async_stop(CompletionToken&& token)
   {
     return net::async_compose<CompletionToken, void(error_code)>(
-        detail::client_stop_op{secure_sessions_, plain_sessions_},
+        [this, coro_ = net::coroutine{}](auto& self,
+                                         error_code ec = {}) mutable {
+          FETCHPP_REENTER(coro_)
+          {
+            FETCHPP_YIELD detail::async_stop_session_pool(this->sessions_,
+                                                          std::move(self));
+            self.complete(ec);
+          }
+        },
         token,
         strand_);
   }
 
-private:
-  template <typename AsyncTransport, typename Endpoint>
-  auto& get_session(Endpoint endpoint,
-                    std::deque<session<Endpoint, AsyncTransport>>& sessions)
-  {
-    auto found = std::find_if(
-        sessions.begin(), sessions.end(), [&](auto const& session) {
-          return session.endpoint() == endpoint &&
-                 session.pending_requests() < max_pending_per_session();
-        });
-    if (found == sessions.end())
-    {
-      if constexpr (Endpoint::is_secure::value)
-        return sessions.emplace_back(
-            std::move(endpoint), this->timeout_, this->strand_, this->context_);
-      else
-        return sessions.emplace_back(
-            std::move(endpoint), this->timeout_, this->strand_);
-    }
-    return *found;
-  }
-
-public:
   template <typename Endpoint>
   auto& get_session(Endpoint endpoint)
   {
-    if constexpr (Endpoint::is_secure::value)
-      return this->get_session(std::move(endpoint), this->secure_sessions_);
-    else
-      return this->get_session(std::move(endpoint), this->plain_sessions_);
+    auto found = std::find_if(
+        sessions_.begin(), sessions_.end(), [&](auto const& adapter) {
+          return boost::variant2::visit(
+              [&](auto const& s) {
+                return endpoint == s.endpoint() &&
+                       s.pending_requests() < max_pending_per_session();
+              },
+              adapter);
+        });
+    if (found == sessions_.end())
+    {
+      if constexpr (Endpoint::is_secure::value)
+        return sessions_.emplace_back(
+            boost::variant2::in_place_type<secure_session>,
+            std::move(endpoint),
+            this->timeout_,
+            this->strand_,
+            this->context_);
+      else
+        return sessions_.emplace_back(
+            boost::variant2::in_place_type<plain_session>,
+            std::move(endpoint),
+            this->timeout_,
+            this->strand_);
+    }
+    return *found;
   }
 
   template <typename Request, typename CompletionToken>
@@ -101,7 +112,6 @@ private:
   std::chrono::nanoseconds timeout_;
   std::size_t max_pending_ = 10u;
   net::ssl::context context_;
-  std::deque<session<plain_endpoint, tcp_async_transport>> plain_sessions_;
-  std::deque<session<secure_endpoint, ssl_async_transport>> secure_sessions_;
+  std::deque<session_adapter> sessions_;
 };
 }

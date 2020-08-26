@@ -53,7 +53,7 @@ void client::set_max_pending_per_session(std::size_t pending)
 
 std::size_t client::session_count() const
 {
-  return plain_sessions_.size() + secure_sessions_.size();
+  return sessions_.size();
 }
 
 net::ssl::context& client::context()
