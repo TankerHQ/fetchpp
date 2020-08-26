@@ -4,6 +4,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
 add_library(fetchpp
   include/fetchpp/fetch.hpp
+  include/fetchpp/client.hpp
   include/fetchpp/get.hpp
   include/fetchpp/post.hpp
   include/fetchpp/version.hpp
@@ -12,6 +13,7 @@ add_library(fetchpp
   include/fetchpp/core/detail/connect_composer.hpp
   include/fetchpp/core/detail/coroutine.hpp
   include/fetchpp/core/detail/fetch.hpp
+  include/fetchpp/core/detail/client.hpp
   include/fetchpp/core/detail/http_stable_async.hpp
   include/fetchpp/core/detail/session_work_queue.hpp
   include/fetchpp/core/cache_mode.hpp

@@ -36,13 +36,29 @@ void client::set_verify_peer(bool v)
                                      net::ssl::verify_none);
 }
 
+auto client::get_executor() const -> executor_type
+{
+  return strand_;
+}
+
+std::size_t client::max_pending_per_session() const
+{
+  return max_pending_;
+}
+
+void client::set_max_pending_per_session(std::size_t pending)
+{
+  max_pending_ = pending;
+}
+
+std::size_t client::session_count() const
+{
+  return plain_sessions_.size() + secure_sessions_.size();
+}
+
 net::ssl::context& client::context()
 {
   return this->context_;
 }
 
-auto client::get_executor() const -> executor_type
-{
-  return strand_;
-}
 }
