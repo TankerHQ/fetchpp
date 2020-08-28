@@ -129,6 +129,7 @@ public:
             this->setup_timer();
             FETCHPP_YIELD do_async_close(*this, std::move(self));
             this->cancel_timer();
+            this->buffer().clear();
             self.complete(ec);
           }
         },
