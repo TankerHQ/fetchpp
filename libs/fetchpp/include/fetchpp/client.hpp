@@ -1,149 +1,22 @@
 #pragma once
 
+#include <fetchpp/core/detail/client.hpp>
 #include <fetchpp/core/session.hpp>
-#include <fetchpp/core/ssl_transport.hpp>
-#include <fetchpp/core/tcp_transport.hpp>
-#include <fetchpp/http/request.hpp>
 #include <fetchpp/http/response.hpp>
-#include <fetchpp/http/url.hpp>
-
-#include <boost/asio/strand.hpp>
 
 #include <boost/asio/ssl/context.hpp>
+#include <boost/asio/strand.hpp>
+#include <boost/variant2/variant.hpp>
 
-#include <fetchpp/core/detail/async_http_result.hpp>
-#include <fetchpp/core/detail/endpoint.hpp>
-#include <fetchpp/core/detail/http_stable_async.hpp>
-
-#include <fetchpp/alias/beast.hpp>
 #include <fetchpp/alias/error_code.hpp>
 #include <fetchpp/alias/net.hpp>
 #include <fetchpp/alias/ssl.hpp>
 
 #include <chrono>
 #include <deque>
-#include <memory>
-#include <queue>
 
 namespace fetchpp
 {
-namespace detail
-{
-template <typename Client, typename Request, typename Response>
-struct client_fetch_data
-{
-  Client& client;
-  Request req;
-  Response res;
-
-  client_fetch_data(Client& client, Request&& request)
-    : client{client}, req{std::move(request)}, res{}
-  {
-  }
-};
-
-template <typename Client,
-          typename Request,
-          typename Response,
-          typename CompletionHandler>
-struct client_fetch_op
-  : stable_async_t<typename Client::executor_type, CompletionHandler>
-{
-  using base_type_t =
-      stable_async_t<typename Client::executor_type, CompletionHandler>;
-  using data_t = client_fetch_data<Client, Request, Response>;
-
-  net::coroutine coro;
-  data_t& data;
-
-  client_fetch_op(Client& client, Request&& req, CompletionHandler&& handler)
-    : base_type_t(std::move(handler), client.get_executor()),
-      coro(),
-      data(beast::allocate_stable<data_t>(*this, client, std::move(req)))
-  {
-    if (auto const& uri = data.req.uri(); http::is_ssl_involved(uri))
-      start(to_endpoint<true>(uri));
-    else
-      start(to_endpoint<false>(uri));
-  }
-
-  template <bool isSecure>
-  void start(basic_endpoint<isSecure> endpoint)
-  {
-    auto& session = data.client.get_session(std::move(endpoint));
-    session.push_request(data.req, data.res, std::move(*this));
-  }
-
-  void operator()(error_code ec = {})
-  {
-    // pin the response before data_t is destroyed
-    auto res = std::move(data.res);
-    this->complete(false, ec, std::move(res));
-  }
-};
-
-template <typename Session>
-struct client_stop_sessions_op
-{
-  std::deque<Session>& sessions_;
-  typename std::deque<Session>::iterator begin_ = {};
-  typename std::deque<Session>::iterator end_ = {};
-  net::coroutine coro_ = {};
-
-  template <typename Self>
-  void operator()(Self& self, error_code ec = {})
-  {
-    FETCHPP_REENTER(coro_)
-    {
-      begin_ = sessions_.begin();
-      end_ = sessions_.end();
-      while (begin_ != end_)
-      {
-        FETCHPP_YIELD begin_->async_stop(std::move(self));
-        ++begin_;
-      }
-      self.complete(ec);
-    }
-  }
-};
-template <typename Session>
-client_stop_sessions_op(std::deque<Session>&)->client_stop_sessions_op<Session>;
-
-template <typename SessionPool, typename CompletionToken>
-auto async_stop_session_pool(SessionPool& sessions, CompletionToken&& token)
-{
-  return net::async_compose<CompletionToken, void(error_code)>(
-      client_stop_sessions_op{sessions}, token);
-}
-
-template <typename SecureSessions, typename PlainSessions>
-struct client_stop_op
-{
-  SecureSessions& secure_sessions_;
-  PlainSessions& plain_sessions_;
-  net::coroutine coro_ = {};
-
-  template <typename Self>
-  void operator()(Self& self, error_code ec = {})
-  {
-    if (ec)
-    {
-      self.complete(ec);
-      return;
-    }
-    FETCHPP_REENTER(coro_)
-    {
-      FETCHPP_YIELD async_stop_session_pool(secure_sessions_, std::move(self));
-      FETCHPP_YIELD async_stop_session_pool(plain_sessions_, std::move(self));
-      self.complete(ec);
-    }
-  }
-};
-template <typename Session1, typename Session2>
-client_stop_op(std::deque<Session1>&, std::deque<Session2>&)
-    ->client_stop_op<std::deque<Session1>, std::deque<Session2>>;
-}
-
 class client
 {
 public:
@@ -156,59 +29,66 @@ public:
          std::chrono::nanoseconds,
          net::ssl::context context);
 
+  using plain_session = session<plain_endpoint, tcp_async_transport>;
+  using secure_session = session<secure_endpoint, ssl_async_transport>;
+  using session_adapter =
+      boost::variant2::variant<plain_session, secure_session>;
+
   using executor_type = net::strand<net::executor>;
 
   executor_type get_executor() const;
-
-  auto max_pending_per_session() const
-  {
-    return max_pending_;
-  }
-
-  void set_max_pending_per_session(std::size_t pending)
-  {
-    max_pending_ = pending;
-  }
+  std::size_t max_pending_per_session() const;
+  void set_max_pending_per_session(std::size_t pending);
+  std::size_t session_count() const;
+  void set_verify_peer(bool v);
+  net::ssl::context& context();
 
   template <typename CompletionToken>
   auto async_stop(CompletionToken&& token)
   {
     return net::async_compose<CompletionToken, void(error_code)>(
-        detail::client_stop_op{secure_sessions_, plain_sessions_},
+        [this, coro_ = net::coroutine{}](auto& self,
+                                         error_code ec = {}) mutable {
+          FETCHPP_REENTER(coro_)
+          {
+            FETCHPP_YIELD detail::async_stop_session_pool(this->sessions_,
+                                                          std::move(self));
+            self.complete(ec);
+          }
+        },
         token,
         strand_);
   }
 
-private:
-  template <typename AsyncTransport, typename Endpoint>
-  auto& get_session(Endpoint endpoint,
-                    std::deque<session<Endpoint, AsyncTransport>>& sessions)
-  {
-    auto found = std::find_if(
-        sessions.begin(), sessions.end(), [&](auto const& session) {
-          return session.endpoint() == endpoint &&
-                 session.pending_requests() < max_pending_per_session();
-        });
-    if (found == sessions.end())
-    {
-      if constexpr (Endpoint::is_secure::value)
-        return sessions.emplace_back(
-            std::move(endpoint), this->timeout_, this->strand_, this->context_);
-      else
-        return sessions.emplace_back(
-            std::move(endpoint), this->timeout_, this->strand_);
-    }
-    return *found;
-  }
-
-public:
   template <typename Endpoint>
   auto& get_session(Endpoint endpoint)
   {
-    if constexpr (Endpoint::is_secure::value)
-      return this->get_session(std::move(endpoint), this->secure_sessions_);
-    else
-      return this->get_session(std::move(endpoint), this->plain_sessions_);
+    auto found = std::find_if(
+        sessions_.begin(), sessions_.end(), [&](auto const& adapter) {
+          return boost::variant2::visit(
+              [&](auto const& s) {
+                return endpoint == s.endpoint() &&
+                       s.pending_requests() < max_pending_per_session();
+              },
+              adapter);
+        });
+    if (found == sessions_.end())
+    {
+      if constexpr (Endpoint::is_secure::value)
+        return sessions_.emplace_back(
+            boost::variant2::in_place_type<secure_session>,
+            std::move(endpoint),
+            this->timeout_,
+            this->strand_,
+            this->context_);
+      else
+        return sessions_.emplace_back(
+            boost::variant2::in_place_type<plain_session>,
+            std::move(endpoint),
+            this->timeout_,
+            this->strand_);
+    }
+    return *found;
   }
 
   template <typename Request, typename CompletionToken>
@@ -227,21 +107,11 @@ public:
     return async_comp.result.get();
   }
 
-  auto session_count() const
-  {
-    return plain_sessions_.size() + secure_sessions_.size();
-  }
-
-  void set_verify_peer(bool v);
-
-  net::ssl::context& context();
-
 private:
   executor_type strand_;
   std::chrono::nanoseconds timeout_;
   std::size_t max_pending_ = 10u;
   net::ssl::context context_;
-  std::deque<session<plain_endpoint, tcp_async_transport>> plain_sessions_;
-  std::deque<session<secure_endpoint, ssl_async_transport>> secure_sessions_;
+  std::deque<session_adapter> sessions_;
 };
 }

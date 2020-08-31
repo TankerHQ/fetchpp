@@ -50,7 +50,12 @@ struct async_ssl_connect_op
           .async_connect(*results_, std::move(self));
       beast::get_lowest_layer(transport_)
           .socket()
-          .set_option(net::ip::tcp::no_delay{true});
+          .set_option(net::ip::tcp::no_delay{true}, ec);
+      if (ec)
+      {
+        self.complete(ec);
+        return;
+      }
       FETCHPP_YIELD transport_.next_layer().async_handshake(
           net::ssl::stream_base::client, std::move(self));
       self.complete(ec);

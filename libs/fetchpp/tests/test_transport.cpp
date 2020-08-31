@@ -127,7 +127,7 @@ TEST_CASE_METHOD(ioc_fixture,
 
 TEST_CASE_METHOD(ioc_fixture,
                  "transport closes and reopens",
-                 "[transport][http][close]")
+                 "[transport][https][close]")
 {
   auto const url = URL("get"_https);
   ssl::context context(ssl::context::tlsv12_client);

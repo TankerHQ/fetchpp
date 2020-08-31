@@ -47,6 +47,20 @@ template <bool isSecure>
 extern bool operator!=(basic_endpoint<isSecure> const&,
                        basic_endpoint<isSecure> const&);
 
+template <bool isSecure1, bool isSecure2>
+bool operator==(basic_endpoint<isSecure1> const&,
+                basic_endpoint<isSecure2> const&)
+{
+  return isSecure1 == isSecure2;
+}
+
+template <bool isSecure1, bool isSecure2>
+bool operator!=(basic_endpoint<isSecure1> const&,
+                basic_endpoint<isSecure2> const&)
+{
+  return isSecure1 != isSecure2;
+}
+
 using secure_endpoint = basic_endpoint<true>;
 using plain_endpoint = basic_endpoint<false>;
 

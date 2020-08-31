@@ -154,18 +154,6 @@ public:
   {
   }
 
-  session(endpoint_type endpoint, net::executor& ex)
-    : endpoint_(std::move(endpoint)), transport_(ex)
-  {
-  }
-
-  session(endpoint_type endpoint,
-          std::chrono::nanoseconds timeout,
-          net::executor& ex)
-    : endpoint_(std::move(endpoint)), transport_(timeout, ex)
-  {
-  }
-
   template <typename Response, typename Request, typename CompletionToken>
   auto push_request(Request& req, Response& res, CompletionToken&& token)
   {
@@ -251,16 +239,12 @@ private:
   bool first_round_ = true;
 };
 
-session(secure_endpoint,
-        std::chrono::nanoseconds,
-        beast::ssl_stream<beast::tcp_stream> &&)
+template <typename... Args>
+session(secure_endpoint, std::chrono::nanoseconds, Args&&...)
     ->session<secure_endpoint, ssl_async_transport>;
 
-session(plain_endpoint, std::chrono::nanoseconds, net::executor&)
+template <typename... Args>
+session(plain_endpoint, std::chrono::nanoseconds, Args&&...)
     ->session<plain_endpoint, tcp_async_transport>;
 
-template <typename AsyncStream>
-session(plain_endpoint, std::chrono::nanoseconds, AsyncStream &&)
-    ->session<plain_endpoint,
-              basic_async_transport<AsyncStream, beast::multi_buffer>>;
 }

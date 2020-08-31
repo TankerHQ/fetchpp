@@ -47,10 +47,6 @@ template bool operator!=
 template bool operator!=
     <false>(basic_endpoint<false> const&, basic_endpoint<false> const&);
 
-template <bool isSecure>
-extern bool operator!=(basic_endpoint<isSecure> const&,
-                       basic_endpoint<isSecure> const&);
-
 template class basic_endpoint<true>;
 template class basic_endpoint<false>;
 }

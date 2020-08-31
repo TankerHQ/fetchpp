@@ -29,7 +29,7 @@ class FetchppConan(ConanFile):
         self.requires("libressl/3.2.0")
         self.requires("boost/1.73.0")
         self.requires("nlohmann_json/3.8.0")
-        self.requires("skyr-url/1.11.0")
+        self.requires("skyr-url/1.12.0")
 
 
     def build_requirements(self):
