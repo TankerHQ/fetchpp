@@ -15,6 +15,7 @@
 #include <fetchpp/alias/tcp.hpp>
 
 #include <chrono>
+#include <functional>
 
 namespace fetchpp
 {
@@ -76,14 +77,24 @@ public:
   using buffer_type = DynamicBuffer;
   using next_layer_type = AsyncStream;
   using executor_type = typename next_layer_type::executor_type;
+  using next_layer_creator_sig = next_layer_type();
+  using next_layer_creator = std::function<next_layer_creator_sig>;
 
   template <typename... Args>
   basic_async_transport(DynamicBuffer buffer,
                         std::chrono::nanoseconds timeout,
                         Args&&... args)
-    : buffer_(std::move(buffer)),
-      stream_(std::forward<Args>(args)...),
-      resolver_(stream_.get_executor()),
+    : stream_creator_([params = std::tuple<Args...>(
+                           std::forward<Args>(args)...)]() mutable {
+        return std::apply(
+            [](auto&&... args) {
+              return next_layer_type(std::forward<decltype(args)>(args)...);
+            },
+            std::move(params));
+      }),
+      buffer_(std::move(buffer)),
+      stream_(std::make_unique<next_layer_type>(stream_creator_())),
+      resolver_(next_layer().get_executor()),
       timeout_(timeout)
   {
   }
@@ -130,6 +141,7 @@ public:
             FETCHPP_YIELD do_async_close(*this, std::move(self));
             this->cancel_timer();
             this->buffer().clear();
+            this->reset();
             self.complete(ec);
           }
         },
@@ -139,12 +151,12 @@ public:
 
   next_layer_type& next_layer()
   {
-    return stream_;
+    return *stream_;
   }
 
   next_layer_type const& next_layer() const
   {
-    return stream_;
+    return *stream_;
   }
 
   tcp::resolver& resolver()
@@ -159,12 +171,17 @@ public:
 
   void setup_timer()
   {
-    get_lowest_layer(stream_).expires_after(timeout_);
+    get_lowest_layer(next_layer()).expires_after(timeout_);
   }
 
   void cancel_timer()
   {
-    get_lowest_layer(stream_).expires_never();
+    get_lowest_layer(next_layer()).expires_never();
+  }
+
+  void reset()
+  {
+    stream_ = std::make_unique<next_layer_type>(stream_creator_());
   }
 
   bool is_open()
@@ -203,8 +220,9 @@ public:
   }
 
 private:
+  next_layer_creator stream_creator_;
   buffer_type buffer_;
-  next_layer_type stream_;
+  std::unique_ptr<next_layer_type> stream_;
   tcp::resolver resolver_;
   std::chrono::nanoseconds timeout_;
   bool running_ = true;
