@@ -1,6 +1,7 @@
 #include <catch2/catch.hpp>
 
 #include <fmt/format.h>
+#include <fmt/ostream.h>
 
 namespace test::helpers
 {
