@@ -26,6 +26,8 @@ public:
   response(response&&) = default;
   response(response const&) = default;
   response& operator=(response const&) = default;
+  response& operator=(response&&) = default;
+  using base_t::base_t;
   using base_t::operator=;
 
   bool has_content_type() const;

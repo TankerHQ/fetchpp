@@ -15,19 +15,56 @@
 
 namespace fetchpp
 {
+template <typename AsyncStream,
+          typename Buffer,
+          typename Request,
+          typename Body,
+          typename CompletionToken>
+auto async_process_one(AsyncStream& stream,
+                       Buffer& buffer,
+                       Request& request,
+                       beast::http::response_parser<Body>& parser,
+                       CompletionToken&& token) ->
+    typename net::async_result<std::decay_t<CompletionToken>,
+                               void(error_code)>::return_type;
+
+template <typename AsyncStream,
+          typename Buffer,
+          typename Request,
+          typename Response,
+          typename CompletionToken>
+auto async_process_one(AsyncStream& stream,
+                       Buffer& buffer,
+                       Request& request,
+                       Response& response,
+                       CompletionToken&& token) ->
+    typename net::async_result<typename std::decay_t<CompletionToken>,
+                               void(error_code)>::return_type;
+
+template <typename AsyncTransport,
+          typename Request,
+          typename Response,
+          typename CompletionToken>
+auto async_process_one(AsyncTransport& transport,
+                       Request& request,
+                       Response& response,
+                       CompletionToken&& token) ->
+    typename net::async_result<std::decay_t<CompletionToken>,
+                               void(error_code)>::return_type;
+
 namespace process_one::detail
 {
 template <typename AsyncStream,
           typename Buffer,
-          typename Response,
+          typename ResponseParser,
           typename CompletionToken,
-          bool = Response::is_request::value == false>
+          bool = ResponseParser::is_request::value == false>
 auto run_async_read(AsyncStream& stream,
                     Buffer& buffer,
-                    Response& response,
+                    ResponseParser& parser,
                     CompletionToken&& token)
 {
-  return http::async_read(stream, buffer, response, std::move(token));
+  return http::async_read(stream, buffer, parser, std::move(token));
 }
 
 template <typename AsyncStream,
@@ -43,13 +80,13 @@ auto run_async_write(AsyncStream& stream,
 
 template <typename AsyncStream,
           typename Request,
-          typename Response,
+          typename ResponseParser,
           typename Buffer>
-struct stream_op
+struct parser_op
 {
   AsyncStream& stream;
   Request& req;
-  Response& res;
+  ResponseParser& parser;
   Buffer& buffer;
   net::coroutine coro = net::coroutine{};
 
@@ -65,11 +102,55 @@ struct stream_op
     FETCHPP_REENTER(coro)
     {
       FETCHPP_YIELD run_async_write(stream, req, std::move(self));
-      FETCHPP_YIELD run_async_read(stream, buffer, res, std::move(self));
+      FETCHPP_YIELD run_async_read(stream, buffer, parser, std::move(self));
       self.complete(ec);
     }
   }
 };
+template <typename AsyncStream,
+          typename Request,
+          typename ResponseParser,
+          typename Buffer>
+parser_op(AsyncStream&, Request&, ResponseParser&, Buffer&)
+    ->parser_op<AsyncStream, Request, ResponseParser, Buffer>;
+
+template <typename AsyncStream,
+          typename Request,
+          typename Response,
+          typename Buffer>
+struct stream_op
+{
+  AsyncStream& stream;
+  Request& req;
+  Response& res;
+  Buffer& buffer;
+  using parser_t = beast::http::response_parser<typename Response::body_type>;
+  std::unique_ptr<parser_t> parser = std::make_unique<parser_t>();
+  net::coroutine coro = net::coroutine{};
+
+  template <typename Self>
+  void operator()(Self& self, error_code ec = error_code{}, std::size_t = 0)
+  {
+    if (ec)
+    {
+      self.complete(ec);
+      return;
+    }
+
+    FETCHPP_REENTER(coro)
+    {
+      if (req.method() == beast::http::verb::connect ||
+          req.method() == beast::http::verb::head)
+        parser->skip(true);
+
+      FETCHPP_YIELD async_process_one(
+          stream, buffer, req, *parser, std::move(self));
+      res = std::move(parser->release());
+      self.complete(ec);
+    }
+  }
+};
+
 template <typename AsyncTransport, typename Request, typename Response>
 struct transport_op
 {
@@ -99,6 +180,25 @@ struct transport_op
     }
   }
 };
+}
+
+template <typename AsyncStream,
+          typename Buffer,
+          typename Request,
+          typename Body,
+          typename CompletionToken>
+auto async_process_one(AsyncStream& stream,
+                       Buffer& buffer,
+                       Request& request,
+                       beast::http::response_parser<Body>& parser,
+                       CompletionToken&& token) ->
+    typename net::async_result<std::decay_t<CompletionToken>,
+                               void(error_code)>::return_type
+{
+  return net::async_compose<CompletionToken, void(error_code)>(
+      process_one::detail::parser_op{stream, request, parser, buffer},
+      token,
+      stream);
 }
 
 template <typename AsyncStream,
