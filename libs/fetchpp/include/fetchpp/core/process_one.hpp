@@ -15,7 +15,7 @@
 
 namespace fetchpp
 {
-namespace detail
+namespace process_one::detail
 {
 template <typename AsyncStream,
           typename Buffer,
@@ -45,7 +45,7 @@ template <typename AsyncStream,
           typename Request,
           typename Response,
           typename Buffer>
-struct process_one_stream_op
+struct stream_op
 {
   AsyncStream& stream;
   Request& req;
@@ -71,7 +71,7 @@ struct process_one_stream_op
   }
 };
 template <typename AsyncTransport, typename Request, typename Response>
-struct process_one_transport_op
+struct transport_op
 {
   AsyncTransport& transport_;
   Request& req;
@@ -121,7 +121,7 @@ auto async_process_one(AsyncStream& stream,
                 "Buffer type requirements not met");
 
   return net::async_compose<CompletionToken, void(error_code)>(
-      detail::process_one_stream_op<AsyncStream, Request, Response, Buffer>{
+      process_one::detail::stream_op<AsyncStream, Request, Response, Buffer>{
           stream, request, response, buffer},
       token,
       stream);
@@ -142,7 +142,7 @@ auto async_process_one(AsyncTransport& transport,
   static_assert(is_async_transport<AsyncTransport>::value,
                 "AsyncTransport type requirements not met");
   return net::async_compose<CompletionToken, void(error_code)>(
-      detail::process_one_transport_op<AsyncTransport, Request, Response>{
+      process_one::detail::transport_op<AsyncTransport, Request, Response>{
           transport, request, response},
       token,
       transport);
