@@ -6,6 +6,7 @@
 namespace test::helpers
 {
 auto get_test_host() -> std::string_view;
+auto get_test_proxy() -> std::string;
 
 namespace http_literals
 {
