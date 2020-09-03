@@ -21,12 +21,21 @@ inline auto http_resolve_domain(fetchpp::net::io_context& ioc,
 }
 
 template <typename Stream>
-void http_ssl_connect(fetchpp::net::io_context& ioc,
-                      Stream& stream,
-                      fetchpp::http::url const& url)
+void http_connect(fetchpp::net::io_context& ioc,
+                  Stream& stream,
+                  fetchpp::http::url const& url)
 {
   auto results = http_resolve_domain(ioc, url);
   fetchpp::beast::get_lowest_layer(stream).connect(results);
+}
+
+template <typename Stream>
+void https_connect(fetchpp::net::io_context& ioc,
+                   Stream& stream,
+                   fetchpp::http::url const& url)
+{
+  http_connect(ioc, stream, url);
   stream.handshake(fetchpp::net::ssl::stream_base::client);
 }
+
 }
