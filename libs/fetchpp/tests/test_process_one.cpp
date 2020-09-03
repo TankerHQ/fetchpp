@@ -1,6 +1,5 @@
 #include <catch2/catch.hpp>
 
-#include <fetchpp/core/connect.hpp>
 #include <fetchpp/core/process_one.hpp>
 #include <fetchpp/version.hpp>
 

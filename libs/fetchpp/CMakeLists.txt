@@ -10,7 +10,6 @@ add_library(fetchpp
   include/fetchpp/version.hpp
 
   include/fetchpp/core/detail/async_http_result.hpp
-  include/fetchpp/core/detail/connect_composer.hpp
   include/fetchpp/core/detail/coroutine.hpp
   include/fetchpp/core/detail/fetch.hpp
   include/fetchpp/core/detail/client.hpp
@@ -19,7 +18,6 @@ add_library(fetchpp
   include/fetchpp/core/cache_mode.hpp
   include/fetchpp/core/field_arg.hpp
   include/fetchpp/core/endpoint.hpp
-  include/fetchpp/core/connect.hpp
   include/fetchpp/core/basic_transport.hpp
   include/fetchpp/core/ssl_transport.hpp
   include/fetchpp/core/tcp_transport.hpp
