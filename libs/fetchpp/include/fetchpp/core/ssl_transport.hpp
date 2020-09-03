@@ -5,6 +5,7 @@
 #include <fetchpp/core/endpoint.hpp>
 
 #include <boost/asio/compose.hpp>
+#include <boost/beast/core/bind_handler.hpp>
 #include <boost/beast/core/error.hpp>
 #include <boost/beast/core/multi_buffer.hpp>
 #include <boost/beast/core/tcp_stream.hpp>

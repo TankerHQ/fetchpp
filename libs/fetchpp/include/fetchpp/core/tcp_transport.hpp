@@ -4,7 +4,9 @@
 #include <fetchpp/core/endpoint.hpp>
 
 #include <boost/asio/compose.hpp>
+#include <boost/beast/core/bind_handler.hpp>
 #include <boost/beast/core/multi_buffer.hpp>
+#include <boost/beast/core/stream_traits.hpp>
 #include <boost/beast/core/tcp_stream.hpp>
 
 #include <fetchpp/alias/beast.hpp>
@@ -47,10 +49,10 @@ async_tcp_connect_op(AsyncTransport&,
                      std::unique_ptr<tcp::resolver::results_type>)
     ->async_tcp_connect_op<AsyncTransport>;
 
-template <typename AsyncTransport>
+template <typename AsyncStream>
 struct async_tcp_close_op
 {
-  AsyncTransport& transport_;
+  AsyncStream& stream_;
   net::coroutine coro_ = {};
 
   template <typename Self>
@@ -58,27 +60,19 @@ struct async_tcp_close_op
   {
     FETCHPP_REENTER(coro_)
     {
-      if (transport_.is_open())
-      {
-        beast::get_lowest_layer(transport_).socket().cancel(ec);
-        assert(!ec);
-        // ignore the error
-        ec = {};
-        // give a chance to canceled handler to finish
-        FETCHPP_YIELD net::post(beast::bind_front_handler(std::move(self)));
-        beast::close_socket(beast::get_lowest_layer(transport_));
-      }
-      else
-      {
-        transport_.resolver().cancel();
-        FETCHPP_YIELD net::post(beast::bind_front_handler(std::move(self)));
-      }
+      beast::get_lowest_layer(stream_).socket().cancel(ec);
+      assert(!ec);
+      // ignore the error
+      ec = {};
+      // give a chance to canceled handler to finish
+      FETCHPP_YIELD net::post(beast::bind_front_handler(std::move(self)));
+      beast::close_socket(beast::get_lowest_layer(stream_));
       self.complete(ec);
     }
   }
 };
-template <typename AsyncTransport>
-async_tcp_close_op(AsyncTransport&)->async_tcp_close_op<AsyncTransport>;
+template <typename AsyncStream>
+async_tcp_close_op(AsyncStream&)->async_tcp_close_op<AsyncStream>;
 }
 
 template <typename Executor,

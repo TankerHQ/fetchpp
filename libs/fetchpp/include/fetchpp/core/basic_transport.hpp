@@ -5,6 +5,7 @@
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/compose.hpp>
 #include <boost/asio/ip/tcp.hpp>
+#include <boost/beast/core/bind_handler.hpp>
 #include <boost/beast/core/stream_traits.hpp>
 
 #include <fetchpp/core/detail/coroutine.hpp>
@@ -138,7 +139,16 @@ public:
           {
             set_running(false);
             this->setup_timer();
-            FETCHPP_YIELD do_async_close(*this, std::move(self));
+            if (this->is_open())
+            {
+              FETCHPP_YIELD do_async_close(*this, std::move(self));
+            }
+            else
+            {
+              this->resolver().cancel();
+              FETCHPP_YIELD net::post(
+                  beast::bind_front_handler(std::move(self)));
+            }
             this->cancel_timer();
             this->buffer().clear();
             this->reset();
