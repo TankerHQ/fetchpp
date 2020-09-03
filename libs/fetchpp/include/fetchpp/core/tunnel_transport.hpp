@@ -72,8 +72,8 @@ struct async_tunnel_connect_op
       beast::get_lowest_layer(transport_)
           .socket()
           .set_option(net::ip::tcp::no_delay{true});
-      transaction_ = std::unique_ptr<http_messages>(new http_messages(
-          {beast::http::verb::connect, endpoint_.target.host(), 11}));
+      transaction_ = std::make_unique<http_messages>(http_messages::request_t{
+          beast::http::verb::connect, endpoint_.target.host(), 11});
       transaction_->request.set(beast::http::field::host,
                                 endpoint_.target.host());
       transaction_->request.set(beast::http::field::proxy_connection,

@@ -49,4 +49,14 @@ template bool operator!=
 
 template class basic_endpoint<true>;
 template class basic_endpoint<false>;
+
+bool operator==(tunnel_endpoint const& left, tunnel_endpoint const& right)
+{
+  return left.proxy == right.proxy && left.target == right.target;
+}
+
+bool operator!=(tunnel_endpoint const& left, tunnel_endpoint const& right)
+{
+  return !(left == right);
+}
 }
