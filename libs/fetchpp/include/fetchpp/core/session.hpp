@@ -5,6 +5,7 @@
 #include <fetchpp/core/process_one.hpp>
 #include <fetchpp/core/ssl_transport.hpp>
 #include <fetchpp/core/tcp_transport.hpp>
+#include <fetchpp/core/tunnel_transport.hpp>
 
 #include <fetchpp/core/detail/async_http_result.hpp>
 #include <fetchpp/core/detail/session_work_queue.hpp>
@@ -246,5 +247,9 @@ session(secure_endpoint, std::chrono::nanoseconds, Args&&...)
 template <typename... Args>
 session(plain_endpoint, std::chrono::nanoseconds, Args&&...)
     ->session<plain_endpoint, tcp_async_transport>;
+
+template <typename... Args>
+session(tunnel_endpoint, std::chrono::nanoseconds, Args&&...)
+    ->session<tunnel_endpoint, tunnel_async_transport>;
 
 }
