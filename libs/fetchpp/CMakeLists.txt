@@ -31,6 +31,7 @@ add_library(fetchpp
   include/fetchpp/http/content_type.hpp
   include/fetchpp/http/field.hpp
   include/fetchpp/http/headers.hpp
+  include/fetchpp/http/proxy.hpp
   include/fetchpp/http/json_body.hpp
   include/fetchpp/http/request.hpp
   include/fetchpp/http/response.hpp
@@ -56,6 +57,7 @@ add_library(fetchpp
   src/http/content_type.cpp
   src/http/field_arg.cpp
   src/http/response.cpp
+  src/http/proxy.cpp
   src/http/url.cpp
   src/beast.cpp
 )
