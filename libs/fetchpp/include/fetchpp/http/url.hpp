@@ -27,6 +27,8 @@ std::string encode_query(nlohmann::json const&);
 
 namespace url_literals
 {
-using namespace skyr::literals;
+inline auto operator "" _url(const char *str, std::size_t length) {
+  return url(std::string_view(str, length));
+}
 }
 }
