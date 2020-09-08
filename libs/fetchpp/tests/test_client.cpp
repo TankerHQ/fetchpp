@@ -20,7 +20,12 @@ using namespace std::chrono_literals;
 
 using namespace test::helpers;
 using namespace test::helpers::http_literals;
+using namespace std::string_view_literals;
+using namespace fetchpp::http::url_literals;
 using test::helpers::HasErrorCode;
+
+namespace ssl = fetchpp::net::ssl;
+using URL = fetchpp::http::url;
 
 TEST_CASE_METHOD(ioc_fixture, "client push one request", "[client][http]")
 {
@@ -166,4 +171,19 @@ TEST_CASE_METHOD(ioc_fixture,
   REQUIRE_NOTHROW(cl.async_stop(boost::asio::use_future));
   for (auto& future : futures)
     future.wait();
+}
+
+TEST_CASE_METHOD(ioc_fixture,
+                 "http client uses proxy",
+                 "[client][https][proxy]")
+{
+  fetchpp::client cl{ioc, 2s};
+  auto const delay = fetchpp::http::url("get"_https);
+  auto request = fetchpp::http::make_request(fetchpp::http::verb::get, delay);
+  cl.add_proxy(fetchpp::http::proxy_scheme::https,
+               fetchpp::http::proxy(get_test_proxy()));
+  ssl::context ctx(ssl::context::tlsv12_client);
+
+  auto res = cl.async_fetch(std::move(request), boost::asio::use_future).get();
+  REQUIRE(res.result_int() == 200);
 }

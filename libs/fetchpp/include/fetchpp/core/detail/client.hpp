@@ -6,6 +6,10 @@
 #include <fetchpp/core/detail/async_http_result.hpp>
 #include <fetchpp/core/detail/endpoint.hpp>
 #include <fetchpp/core/detail/http_stable_async.hpp>
+#include <fetchpp/core/endpoint.hpp>
+#include <fetchpp/core/session.hpp>
+#include <fetchpp/http/proxy.hpp>
+#include <fetchpp/http/response.hpp>
 
 #include <fetchpp/alias/beast.hpp>
 
@@ -15,12 +19,31 @@
 
 namespace fetchpp::detail
 {
-template <typename Client, typename Request, typename Response>
+template <typename Tunnel>
+struct session_for_tunnel;
+
+template <>
+struct session_for_tunnel<tunnel_endpoint>
+{
+  using type = session<tunnel_endpoint, tunnel_async_transport>;
+};
+template <>
+struct session_for_tunnel<secure_endpoint>
+{
+  using type = session<secure_endpoint, ssl_async_transport>;
+};
+template <>
+struct session_for_tunnel<plain_endpoint>
+{
+  using type = session<plain_endpoint, tcp_async_transport>;
+};
+
+template <typename Client, typename Request>
 struct client_fetch_data
 {
   Client& client;
   Request req;
-  Response res;
+  http::response res;
 
   client_fetch_data(Client& client, Request&& request)
     : client{client}, req{std::move(request)}, res{}
@@ -28,38 +51,43 @@ struct client_fetch_data
   }
 };
 
-template <typename Client,
-          typename Request,
-          typename Response,
-          typename CompletionHandler>
+template <typename Client, typename Request, typename CompletionHandler>
 struct client_fetch_op
   : stable_async_t<typename Client::executor_type, CompletionHandler>
 {
   using base_type_t =
       stable_async_t<typename Client::executor_type, CompletionHandler>;
-  using data_t = client_fetch_data<Client, Request, Response>;
+  using data_t = client_fetch_data<Client, Request>;
 
   net::coroutine coro;
   data_t& data;
 
-  client_fetch_op(Client& client, Request&& req, CompletionHandler&& handler)
+  client_fetch_op(Client& client, Request req, CompletionHandler&& handler)
     : base_type_t(std::move(handler), client.get_executor()),
       coro(),
       data(beast::allocate_stable<data_t>(*this, client, std::move(req)))
   {
-    auto push_request = [&](auto& s) {
+    auto request_pusher = [&](auto& s) {
       s.push_request(data.req, data.res, std::move(*this));
     };
 
-    if (auto const& uri = data.req.uri(); http::is_ssl_involved(uri))
+    auto const& proxy = http::select_proxy(client.proxies(), data.req.uri());
+
+    if (proxy.has_value())
+    {
+      auto& session = data.client.get_session(tunnel_endpoint{
+          to_endpoint<false>(proxy->url()), to_endpoint<true>(data.req.uri())});
+      boost::variant2::visit(request_pusher, session);
+    }
+    else if (auto const& uri = data.req.uri(); http::is_ssl_involved(uri))
     {
       auto& session = data.client.get_session(to_endpoint<true>(uri));
-      boost::variant2::visit(push_request, session);
+      boost::variant2::visit(request_pusher, session);
     }
     else
     {
       auto& session = data.client.get_session(to_endpoint<false>(uri));
-      boost::variant2::visit(push_request, session);
+      boost::variant2::visit(request_pusher, session);
     }
   }
 
@@ -70,6 +98,9 @@ struct client_fetch_op
     this->complete(false, ec, std::move(res));
   }
 };
+template <typename Client, typename Request, typename CompletionHandler>
+client_fetch_op(Client&, Request, CompletionHandler)
+    ->client_fetch_op<Client, Request, CompletionHandler>;
 
 template <typename Session>
 struct client_stop_sessions_op
