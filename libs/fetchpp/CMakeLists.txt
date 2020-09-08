@@ -15,6 +15,7 @@ add_library(fetchpp
   include/fetchpp/core/detail/client.hpp
   include/fetchpp/core/detail/http_stable_async.hpp
   include/fetchpp/core/detail/session_work_queue.hpp
+  include/fetchpp/core/detail/overloaded.hpp
   include/fetchpp/core/cache_mode.hpp
   include/fetchpp/core/field_arg.hpp
   include/fetchpp/core/endpoint.hpp
