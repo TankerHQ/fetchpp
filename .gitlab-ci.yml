@@ -9,6 +9,9 @@ stages:
   stage: build
   except:
     - schedules
+  services:
+    - name: vimagick/tinyproxy
+      alias: tinyproxy
 
 build/linux:
   extends: .build
