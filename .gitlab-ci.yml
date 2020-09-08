@@ -7,6 +7,9 @@ stages:
 
 .build:
   stage: build
+  variables:
+    FETCHPP_TEST_HOST: "httpbin.org"
+    FETCHPP_TEST_PROXY: "tinyproxy:8888"
   except:
     - schedules
   services:
