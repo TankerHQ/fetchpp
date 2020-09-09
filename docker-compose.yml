@@ -13,6 +13,14 @@ services:
         SSL_PORT: 443
       ports:
         - '443:443'
+    proxy_squid:
+      image: sameersbn/squid
+      ports:
+        - "3128:3128"
+        - "3129:3129"
+      volumes:
+        - ./squid.conf:/etc/squid/squid.conf
+        - /tmp/squid/:/var/log/squid/
     #custom_proxy:
       #image: fsouza/docker-ssl-proxy
       #environment:

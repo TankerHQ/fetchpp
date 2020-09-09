@@ -1,7 +1,9 @@
 #pragma once
 
 #include <fetchpp/core/detail/client.hpp>
+#include <fetchpp/core/detail/overloaded.hpp>
 #include <fetchpp/core/session.hpp>
+#include <fetchpp/http/proxy.hpp>
 #include <fetchpp/http/response.hpp>
 
 #include <boost/asio/ssl/context.hpp>
@@ -17,6 +19,7 @@
 
 namespace fetchpp
 {
+
 class client
 {
 public:
@@ -31,8 +34,9 @@ public:
 
   using plain_session = session<plain_endpoint, tcp_async_transport>;
   using secure_session = session<secure_endpoint, ssl_async_transport>;
+  using tunnel_session = session<tunnel_endpoint, tunnel_async_transport>;
   using session_adapter =
-      boost::variant2::variant<plain_session, secure_session>;
+      boost::variant2::variant<plain_session, secure_session, tunnel_session>;
 
   using executor_type = net::strand<net::executor>;
 
@@ -42,6 +46,9 @@ public:
   std::size_t session_count() const;
   void set_verify_peer(bool v);
   net::ssl::context& context();
+  void add_proxy(http::proxy_match, http::proxy);
+  void set_proxies(http::proxy_map);
+  http::proxy_map const& proxies() const;
 
   template <typename CompletionToken>
   auto async_stop(CompletionToken&& token)
@@ -60,33 +67,35 @@ public:
         strand_);
   }
 
-  template <typename Endpoint>
+  template <
+      typename Endpoint,
+      typename Session = typename detail::session_for_tunnel<Endpoint>::type>
   auto& get_session(Endpoint endpoint)
   {
     auto found = std::find_if(
         sessions_.begin(), sessions_.end(), [&](auto const& adapter) {
           return boost::variant2::visit(
-              [&](auto const& s) {
-                return endpoint == s.endpoint() &&
-                       s.pending_requests() < max_pending_per_session();
-              },
+              detail::overloaded{[&](Session const& session) {
+                                   return endpoint == session.endpoint() &&
+                                          session.pending_requests() <
+                                              max_pending_per_session();
+                                 },
+                                 [&](auto const&) { return false; }},
               adapter);
         });
     if (found == sessions_.end())
     {
-      if constexpr (Endpoint::is_secure::value)
-        return sessions_.emplace_back(
-            boost::variant2::in_place_type<secure_session>,
-            std::move(endpoint),
-            this->timeout_,
-            this->strand_,
-            this->context_);
+      if constexpr (Session::endpoint_type::is_secure::value)
+        return sessions_.emplace_back(boost::variant2::in_place_type<Session>,
+                                      std::move(endpoint),
+                                      this->timeout_,
+                                      this->strand_,
+                                      this->context_);
       else
-        return sessions_.emplace_back(
-            boost::variant2::in_place_type<plain_session>,
-            std::move(endpoint),
-            this->timeout_,
-            this->strand_);
+        return sessions_.emplace_back(boost::variant2::in_place_type<Session>,
+                                      std::move(endpoint),
+                                      this->timeout_,
+                                      this->strand_);
     }
     return *found;
   }
@@ -96,14 +105,15 @@ public:
   {
     using async_completion_t =
         detail::async_http_completion<CompletionToken, http::response>;
-    using handler_t = typename async_completion_t::completion_handler_type;
 
     async_completion_t async_comp{token};
-    auto op =
-        detail::client_fetch_op<client, Request, http::response, handler_t>(
-            *this,
-            std::move(request),
-            std::move(async_comp.completion_handler));
+    net::post(this->strand_,
+              [this,
+               request = std::move(request),
+               handler = std::move(async_comp.completion_handler)]() mutable {
+                detail::client_fetch_op(
+                    *this, std::move(request), std::move(handler));
+              });
     return async_comp.result.get();
   }
 
@@ -113,5 +123,6 @@ private:
   std::size_t max_pending_ = 10u;
   net::ssl::context context_;
   std::deque<session_adapter> sessions_;
+  http::proxy_map proxies_;
 };
 }

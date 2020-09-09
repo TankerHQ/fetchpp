@@ -17,12 +17,18 @@ namespace fetchpp::http
 class response : public simple_response<beast::http::vector_body<std::uint8_t>>
 {
 public:
-  using base_t = beast::http::response<beast::http::vector_body<std::uint8_t>>;
+  using base_t = simple_response<beast::http::vector_body<std::uint8_t>>;
   using text_t = std::string;
   using json_type = nlohmann::json;
   using content_t = typename base_t::body_type::value_type;
 
   response() = default;
+  response(response&&) = default;
+  response(response const&) = default;
+  response& operator=(response const&) = default;
+  response& operator=(response&&) = default;
+  using base_t::base_t;
+  using base_t::operator=;
 
   bool has_content_type() const;
   http::content_type const& content_type() const;

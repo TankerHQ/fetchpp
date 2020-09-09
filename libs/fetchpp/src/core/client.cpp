@@ -56,6 +56,25 @@ std::size_t client::session_count() const
   return sessions_.size();
 }
 
+void client::add_proxy(http::proxy_match key, http::proxy newproxy)
+{
+  net::post(this->strand_, [k = std::move(key), p = std::move(newproxy), this] {
+    this->proxies_.emplace(std::move(k), std::move(p));
+  });
+}
+
+void client::set_proxies(http::proxy_map newproxies)
+{
+  net::post(this->strand_, [p = std::move(newproxies), this]() mutable {
+    this->proxies_ = std::move(p);
+  });
+}
+
+http::proxy_map const& client::proxies() const
+{
+  return this->proxies_;
+}
+
 net::ssl::context& client::context()
 {
   return this->context_;

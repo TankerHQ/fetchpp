@@ -38,6 +38,7 @@ using test::helpers::ioc_fixture;
 using AsyncStream = fetchpp::beast::ssl_stream<fetchpp::beast::tcp_stream>;
 namespace ssl = fetchpp::net::ssl;
 using boost::asio::use_future;
+using URL = fetchpp::http::url;
 
 TEST_CASE_METHOD(ioc_fixture,
                  "session fails to auto connect on bad domain",
@@ -251,5 +252,27 @@ TEST_CASE_METHOD(ioc_fixture,
     for (auto& future : futures)
       future.wait();
     REQUIRE(session.pending_requests() == 0);
+  }
+}
+
+TEST_CASE_METHOD(ioc_fixture,
+                 "session executes one request through proxy tunnel",
+                 "[session][proxy][push]")
+{
+  auto const url = URL("get"_https);
+  ssl::context ctx(ssl::context::tlsv12_client);
+  auto const proxy_url = URL(test::helpers::get_test_proxy());
+  auto const tunnel =
+      fetchpp::tunnel_endpoint{fetchpp::detail::to_endpoint<false>(proxy_url),
+                               fetchpp::detail::to_endpoint<true>(url)};
+  auto session = fetchpp::session(tunnel, 30s, ex, ctx);
+
+  auto request = fetchpp::http::make_request(fetchpp::http::verb::get,
+                                             fetchpp::http::url("get"_https));
+  {
+    session.async_start(use_future).get();
+    fetchpp::http::response response;
+    session.push_request(request, response, use_future).get();
+    REQUIRE(response.result_int() == 200);
   }
 }

@@ -1,40 +1,58 @@
 #pragma once
 
+#include <fetchpp/core/basic_transport.hpp>
+#include <fetchpp/core/detail/close_ssl.hpp>
 #include <fetchpp/core/endpoint.hpp>
+#include <fetchpp/core/process_one.hpp>
 
-#include <boost/asio/buffer.hpp>
 #include <boost/asio/compose.hpp>
+#include <boost/asio/executor.hpp>
 #include <boost/asio/ip/tcp.hpp>
-#include <boost/beast/core/bind_handler.hpp>
-#include <boost/beast/core/stream_traits.hpp>
-
-#include <fetchpp/core/detail/coroutine.hpp>
+#include <boost/asio/ssl/context.hpp>
+#include <boost/beast/core/multi_buffer.hpp>
+#include <boost/beast/core/tcp_stream.hpp>
+#include <boost/beast/http/empty_body.hpp>
+#include <boost/beast/http/message.hpp>
+#include <boost/beast/http/string_body.hpp>
+#include <boost/beast/ssl/ssl_stream.hpp>
 
 #include <fetchpp/alias/beast.hpp>
 #include <fetchpp/alias/error_code.hpp>
 #include <fetchpp/alias/net.hpp>
+#include <fetchpp/alias/ssl.hpp>
 #include <fetchpp/alias/tcp.hpp>
-
-#include <chrono>
-#include <functional>
 
 namespace fetchpp
 {
-bool is_brutally_closed(error_code ec);
+class tunnel_async_transport;
 
 namespace detail
 {
-template <typename AsyncTransport>
-struct async_basic_connect_op
+struct http_messages
 {
-  detail::base_endpoint& endpoint_;
-  AsyncTransport& transport_;
+  using body_t = beast::http::empty_body;
+  using request_t = beast::http::request<body_t>;
+  using response_t = beast::http::response<body_t>;
+
+  http_messages(request_t req) : request(std::move(req)), response()
+  {
+  }
+  request_t request;
+  response_t response;
+};
+
+template <typename Transport>
+struct async_tunnel_connect_op
+{
+  tunnel_endpoint const& endpoint_;
+  Transport& transport_;
+  std::unique_ptr<http_messages> transaction_ = {};
   net::coroutine coro_ = {};
 
   template <typename Self>
   void operator()(Self& self,
                   error_code ec = {},
-                  tcp::resolver::results_type results = {})
+                  tcp::resolver::results_type::endpoint_type = {})
   {
     if (ec)
     {
@@ -47,62 +65,78 @@ struct async_basic_connect_op
       transport_.set_running(true);
       transport_.setup_timer();
       FETCHPP_YIELD transport_.resolver_.async_resolve(
-          endpoint_.domain(),
-          std::to_string(endpoint_.port()),
+          endpoint_.proxy.domain(),
+          std::to_string(endpoint_.proxy.port()),
           net::ip::resolver_base::numeric_service,
           std::move(self));
-      FETCHPP_YIELD do_async_connect(
-          transport_, endpoint_.domain(), std::move(results), std::move(self));
+      beast::get_lowest_layer(transport_)
+          .socket()
+          .set_option(net::ip::tcp::no_delay{true});
+      transaction_ = std::make_unique<http_messages>(http_messages::request_t{
+          beast::http::verb::connect, endpoint_.target.host(), 11});
+      transaction_->request.set(beast::http::field::host,
+                                endpoint_.target.host());
+      transaction_->request.set(beast::http::field::proxy_connection,
+                                "Keep-Alive");
+      FETCHPP_YIELD async_process_one(transport_.next_layer().next_layer(),
+                                      transport_.buffer(),
+                                      transaction_->request,
+                                      transaction_->response,
+                                      std::move(self));
+      if (transaction_->response.result() != beast::http::status::ok)
+      {
+        // FIXME: fetchpp::errc::proxy_connection_refused or smth
+        self.complete(net::error::connection_refused);
+        return;
+      }
+      FETCHPP_YIELD transport_.next_layer().async_handshake(
+          net::ssl::stream_base::client, std::move(self));
       transport_.cancel_timer();
       self.complete(ec);
     }
   }
+
+  template <typename Self>
+  void operator()(Self& self,
+                  error_code ec,
+                  tcp::resolver::results_type results)
+  {
+    if (ec)
+    {
+      self.complete(ec);
+      return;
+    }
+    beast::get_lowest_layer(transport_).async_connect(results, std::move(self));
+  }
 };
-template <typename AsyncStream>
-async_basic_connect_op(detail::base_endpoint&, AsyncStream&)
-    ->async_basic_connect_op<AsyncStream>;
+
+template <typename Transport>
+async_tunnel_connect_op(tunnel_endpoint, Transport&)
+    ->async_tunnel_connect_op<Transport>;
+
+template <typename CompletionToken>
+auto do_async_close(tunnel_async_transport& ts, CompletionToken&& token);
 }
 
-template <typename AsyncStream, typename DynamicBuffer>
-class basic_async_transport
+class tunnel_async_transport
 {
-  static_assert(beast::is_async_stream<AsyncStream>::value,
-                "AsyncStream type requirements not met");
-  static_assert(net::is_dynamic_buffer<DynamicBuffer>::value,
-                "DynamicBuffer type requirements not met");
-
   template <typename AsyncTransport>
-  friend struct detail::async_basic_connect_op;
+  friend struct detail::async_tunnel_connect_op;
 
 public:
-  using buffer_type = DynamicBuffer;
-  using next_layer_type = AsyncStream;
+  using buffer_type = beast::multi_buffer;
+  using next_layer_type = beast::ssl_stream<beast::tcp_stream>;
   using executor_type = typename next_layer_type::executor_type;
   using next_layer_creator_sig = next_layer_type();
   using next_layer_creator = std::function<next_layer_creator_sig>;
 
-  template <typename... Args>
-  basic_async_transport(DynamicBuffer buffer,
-                        std::chrono::nanoseconds timeout,
-                        Args&&... args)
-    : stream_creator_([params = std::tuple<Args...>(
-                           std::forward<Args>(args)...)]() mutable {
-        return std::apply(
-            [](auto&&... args) {
-              return next_layer_type(std::forward<decltype(args)>(args)...);
-            },
-            std::move(params));
-      }),
-      buffer_(std::move(buffer)),
+  tunnel_async_transport(std::chrono::nanoseconds timeout,
+                         net::executor ex,
+                         net::ssl::context& ctx)
+    : stream_creator_([ex, &ctx]() { return next_layer_type(ex, ctx); }),
       stream_(std::make_unique<next_layer_type>(stream_creator_())),
       resolver_(next_layer().get_executor()),
       timeout_(timeout)
-  {
-  }
-
-  template <typename... Args>
-  basic_async_transport(std::chrono::nanoseconds timeout, Args&&... args)
-    : basic_async_transport(buffer_type{}, timeout, std::forward<Args>(args)...)
   {
   }
 
@@ -123,10 +157,10 @@ public:
   }
 
   template <typename CompletionToken>
-  auto async_connect(detail::base_endpoint& endpoint, CompletionToken&& token)
+  auto async_connect(tunnel_endpoint const& endpoint, CompletionToken&& token)
   {
     return net::async_compose<CompletionToken, void(error_code)>(
-        detail::async_basic_connect_op{endpoint, *this}, token, *this);
+        detail::async_tunnel_connect_op{endpoint, *this}, token, *this);
   }
 
   template <typename CompletionToken>
@@ -140,9 +174,7 @@ public:
             set_running(false);
             this->setup_timer();
             if (this->is_open())
-            {
-              FETCHPP_YIELD do_async_close(*this, std::move(self));
-            }
+              FETCHPP_YIELD detail::do_async_close(*this, std::move(self));
             else
             {
               this->resolver().cancel();
@@ -238,9 +270,13 @@ private:
   bool running_ = true;
 };
 
-template <class T>
-using is_async_transport = std::integral_constant<
-    bool,
-    beast::is_async_stream<T>::value &&
-        net::is_dynamic_buffer<typename T::buffer_type>::value>;
+namespace detail
+{
+template <typename CompletionToken>
+auto do_async_close(tunnel_async_transport& ts, CompletionToken&& token)
+{
+  return net::async_compose<CompletionToken, void(error_code)>(
+      detail::async_ssl_close_op{ts.next_layer()}, token, ts);
+}
+}
 }

@@ -10,16 +10,15 @@ add_library(fetchpp
   include/fetchpp/version.hpp
 
   include/fetchpp/core/detail/async_http_result.hpp
-  include/fetchpp/core/detail/connect_composer.hpp
   include/fetchpp/core/detail/coroutine.hpp
   include/fetchpp/core/detail/fetch.hpp
   include/fetchpp/core/detail/client.hpp
   include/fetchpp/core/detail/http_stable_async.hpp
   include/fetchpp/core/detail/session_work_queue.hpp
+  include/fetchpp/core/detail/overloaded.hpp
   include/fetchpp/core/cache_mode.hpp
   include/fetchpp/core/field_arg.hpp
   include/fetchpp/core/endpoint.hpp
-  include/fetchpp/core/connect.hpp
   include/fetchpp/core/basic_transport.hpp
   include/fetchpp/core/ssl_transport.hpp
   include/fetchpp/core/tcp_transport.hpp
@@ -33,6 +32,7 @@ add_library(fetchpp
   include/fetchpp/http/content_type.hpp
   include/fetchpp/http/field.hpp
   include/fetchpp/http/headers.hpp
+  include/fetchpp/http/proxy.hpp
   include/fetchpp/http/json_body.hpp
   include/fetchpp/http/request.hpp
   include/fetchpp/http/response.hpp
@@ -58,6 +58,7 @@ add_library(fetchpp
   src/http/content_type.cpp
   src/http/field_arg.cpp
   src/http/response.cpp
+  src/http/proxy.cpp
   src/http/url.cpp
   src/beast.cpp
 )

@@ -1,6 +1,5 @@
 #pragma once
 
-#include <fetchpp/core/connect.hpp>
 #include <fetchpp/core/process_one.hpp>
 #include <fetchpp/core/session.hpp>
 #include <fetchpp/core/ssl_transport.hpp>
