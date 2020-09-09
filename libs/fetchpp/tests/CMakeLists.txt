@@ -47,7 +47,13 @@ target_link_libraries(test_client test_helpers fetchpp CONAN_PKG::catch2 CONAN_P
 
 add_test(NAME test_unitary COMMAND test_unitary)
 add_test(NAME test_transport COMMAND test_transport)
-add_test(NAME test_proxy_transport COMMAND test_proxy_transport)
-add_test(NAME test_session COMMAND test_session)
-add_test(NAME test_client COMMAND test_client)
+
+if(UNIX AND NOT APPLE)
+  add_test(NAME test_proxy_transport COMMAND test_proxy_transport)
+else()
+  set(FETCHPP_TEST_FILTER "~[proxy]")
+  message(STATUS "disabling proxy testing")
+endif()
+add_test(NAME test_session COMMAND test_session ${FETCHPP_TEST_FILTER})
+add_test(NAME test_client COMMAND test_client ${FETCHPP_TEST_FILTER})
 add_test(NAME test_functional COMMAND test_functional)
