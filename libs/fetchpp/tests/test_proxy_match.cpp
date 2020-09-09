@@ -3,8 +3,25 @@
 #include <fetchpp/http/authorization.hpp>
 #include <fetchpp/http/proxy.hpp>
 
+#include <stdlib.h>
+
 namespace http = fetchpp::http;
 using namespace fetchpp::http::url_literals;
+
+namespace helper
+{
+namespace
+{
+void setenv(std::string_view key, std::string_view value, bool overwrite)
+{
+#ifndef WIN32
+  ::setenv(key.data(), value.data(), overwrite);
+#else
+  _putenv_s(key.data(), value.data());
+#endif
+}
+}
+}
 
 TEST_CASE("parse a proxy url", "[proxy][parse]")
 {
@@ -87,3 +104,31 @@ TEST_CASE("select proxy", "[proxy][select]")
     CHECK(proxy->url() == "http://secondproxy:3128"_url);
   }
 }
+#ifndef WIN32
+TEST_CASE("proxy_from_env", "[proxy][environment]")
+{
+  SECTION("matches proxy variables in upercases")
+  {
+    helper::setenv("HTTP_PROXY", "http://localhost:3128", true);
+    helper::setenv("HTTPS_PROXY", "http://localhost:3129", true);
+    auto proxy_map = fetchpp::http::proxy_from_environment();
+    REQUIRE(proxy_map.size() == 2);
+    REQUIRE(proxy_map.at(http::proxy_scheme::http).url() ==
+            "http://localhost:3128"_url);
+    REQUIRE(proxy_map.at(http::proxy_scheme::https).url() ==
+            "http://localhost:3129"_url);
+  }
+
+  SECTION("matches lower cases variables and overrides uppercases one")
+  {
+    helper::setenv("http_proxy", "http://faraway:3128", true);
+    helper::setenv("https_proxy", "http://faraway:3129", true);
+    auto proxy_map = fetchpp::http::proxy_from_environment();
+    REQUIRE(proxy_map.size() == 2);
+    REQUIRE(proxy_map.at(http::proxy_scheme::http).url() ==
+            "http://faraway:3128"_url);
+    REQUIRE(proxy_map.at(http::proxy_scheme::https).url() ==
+            "http://faraway:3129"_url);
+  }
+}
+#endif

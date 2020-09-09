@@ -37,4 +37,6 @@ using proxy_match = std::variant<proxy_scheme, std::string>;
 using proxy_map = boost::container::flat_map<proxy_match, proxy>;
 
 std::optional<proxy> select_proxy(proxy_map const& proxy, http::url const& url);
+
+proxy_map proxy_from_environment();
 }

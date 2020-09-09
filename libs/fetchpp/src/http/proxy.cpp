@@ -4,6 +4,8 @@
 
 #include <skyr/core/parse.hpp>
 
+#include <cstdlib>
+
 namespace fetchpp::http
 {
 namespace
@@ -18,6 +20,15 @@ proxy_scheme scheme_to_proxy_scheme(std::string_view scheme)
     return proxy_scheme::all;
   throw std::runtime_error("bad proxy scheme");
 }
+std::optional<std::string> safe_get_env(
+    std::string_view key, std::optional<std::string> def = std::nullopt)
+{
+  auto value = std::getenv(key.data());
+  if (value != nullptr && std::strlen(value) > 0)
+    return std::string(value);
+  else
+    return def;
+}
 }
 std::optional<proxy> select_proxy(proxy_map const& proxies,
                                   http::url const& url)
@@ -30,6 +41,20 @@ std::optional<proxy> select_proxy(proxy_map const& proxies,
       return it->second;
   }
   return std::nullopt;
+}
+
+proxy_map proxy_from_environment()
+{
+  proxy_map proxies;
+  if (auto const http_proxy =
+          safe_get_env("http_proxy", safe_get_env("HTTP_PROXY"));
+      http_proxy.has_value())
+    proxies.emplace(fetchpp::http::proxy_scheme::http, http_proxy.value());
+  if (auto const https_proxy =
+          safe_get_env("https_proxy", safe_get_env("HTTPS_PROXY"));
+      https_proxy.has_value())
+    proxies.emplace(fetchpp::http::proxy_scheme::https, https_proxy.value());
+  return proxies;
 }
 
 proxy proxy::parse(std::string_view sv)

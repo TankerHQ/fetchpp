@@ -63,6 +63,13 @@ void client::add_proxy(http::proxy_match key, http::proxy newproxy)
   });
 }
 
+void client::set_proxies(http::proxy_map newproxies)
+{
+  net::post(this->strand_, [p = std::move(newproxies), this]() mutable {
+    this->proxies_ = std::move(p);
+  });
+}
+
 http::proxy_map const& client::proxies() const
 {
   return this->proxies_;

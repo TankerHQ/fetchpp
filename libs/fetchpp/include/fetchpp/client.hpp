@@ -47,6 +47,7 @@ public:
   void set_verify_peer(bool v);
   net::ssl::context& context();
   void add_proxy(http::proxy_match, http::proxy);
+  void set_proxies(http::proxy_map);
   http::proxy_map const& proxies() const;
 
   template <typename CompletionToken>
