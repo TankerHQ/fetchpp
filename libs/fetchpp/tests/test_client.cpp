@@ -79,7 +79,7 @@ TEST_CASE_METHOD(ioc_fixture, "client with delay", "[client][http][delay]")
 
 TEST_CASE_METHOD(ioc_fixture,
                  "https client stops while requesting",
-                 "[client][https][delay]")
+                 "[client][https][delay][.stop]")
 {
   using fetchpp::http::url;
 
@@ -110,7 +110,7 @@ TEST_CASE_METHOD(ioc_fixture,
 
 TEST_CASE_METHOD(ioc_fixture,
                  "http client stops while requesting",
-                 "[client][http][delay]")
+                 "[client][http][delay][.stop]")
 {
   using fetchpp::http::url;
 
@@ -139,7 +139,7 @@ TEST_CASE_METHOD(ioc_fixture,
 
 TEST_CASE_METHOD(ioc_fixture,
                  "https client stops while connecting",
-                 "[client][https][delay]")
+                 "[client][https][delay][.stop]")
 {
   fetchpp::client cl{ioc, 2s};
   auto const delay = fetchpp::http::url("delay/1"_https);
@@ -158,7 +158,7 @@ TEST_CASE_METHOD(ioc_fixture,
 
 TEST_CASE_METHOD(ioc_fixture,
                  "http client stops while connecting",
-                 "[client][http][delay]")
+                 "[client][http][delay][.stop]")
 {
   fetchpp::client cl{ioc, 2s};
   auto const delay = fetchpp::http::url("delay/1"_http);
