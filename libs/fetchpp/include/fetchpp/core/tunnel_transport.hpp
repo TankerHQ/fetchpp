@@ -87,6 +87,7 @@ struct async_tunnel_connect_op
       {
         // FIXME: fetchpp::errc::proxy_connection_refused or smth
         self.complete(net::error::connection_refused);
+        transport_.cancel_timer();
         return;
       }
       FETCHPP_YIELD transport_.next_layer().async_handshake(
@@ -104,6 +105,7 @@ struct async_tunnel_connect_op
     if (ec)
     {
       self.complete(ec);
+      transport_.cancel_timer();
       return;
     }
     beast::get_lowest_layer(transport_).async_connect(results, std::move(self));
