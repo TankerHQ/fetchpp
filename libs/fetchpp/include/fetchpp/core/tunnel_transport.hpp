@@ -108,6 +108,11 @@ struct async_tunnel_connect_op
       transport_.cancel_timer();
       return;
     }
+    // https://www.cloudflare.com/learning/ssl/what-is-sni/
+    if (!SSL_set_tlsext_host_name(transport_.next_layer().native_handle(),
+                                  endpoint_.target.domain().data()))
+      return self.complete(error_code{static_cast<int>(::ERR_get_error()),
+                                      net::error::get_ssl_category()});
     beast::get_lowest_layer(transport_).async_connect(results, std::move(self));
   }
 };
