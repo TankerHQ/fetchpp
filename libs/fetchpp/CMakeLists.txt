@@ -84,6 +84,6 @@ install(TARGETS fetchpp
 )
 
 
-if(ENABLE_TESTING)
+if(BUILD_TESTING)
   add_subdirectory(tests)
 endif()

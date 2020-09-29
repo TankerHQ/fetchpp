@@ -1,4 +1,5 @@
 project(fetchpp CXX)
+include(CTest)
 
 cmake_minimum_required(VERSION 3.4)
 
@@ -10,16 +11,11 @@ include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
 conan_basic_setup(TARGETS)
 
 option(WARN_AS_ERROR "add -Werror during compilation" OFF)
-option(ENABLE_TESTING "Enable tests" ON)
 option(WITH_COVERAGE "Enable coverage" OFF)
 option(WARN_AS_ERROR "Add -Werror during compilation" OFF)
 
 if (WARN_AS_ERROR)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror")
-endif()
-
-if (ENABLE_TESTING)
-  enable_testing()
 endif()
 
 # CMAKE_C_FLAGS and the like are _strings_, not lists.
@@ -31,14 +27,6 @@ macro(fetchpp_add_flags var flags)
     set(${var} "${${var}} ${flags}")
   endif()
 endmacro()
-
-if (MINGW)
-  # optimization flags are missing by default, and cause "file too big" errors
-  fetchpp_add_flags(CMAKE_CXX_FLAGS_DEBUG "-Og")
-  fetchpp_add_flags(CMAKE_CXX_FLAGS_RELEASE "-O3")
-  fetchpp_add_flags(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O3 -g")
-  fetchpp_add_flags(CMAKE_CXX_FLAGS_MINSIZEREL "-Os")
-endif()
 
 if(${WITH_COVERAGE})
   if(WIN32)
@@ -68,3 +56,28 @@ fetchpp_add_flags(CMAKE_C_FLAGS ${COMMON_COMPILE_FLAGS})
 fetchpp_add_flags(CMAKE_CXX_FLAGS ${COMMON_COMPILE_FLAGS})
 
 add_subdirectory(libs/fetchpp)
+
+if(WITH_COVERAGE)
+  # gcov version must match GCC version
+  string(REGEX MATCH "([0-9])\.[0-9]\.[0-9]" _out ${CMAKE_CXX_COMPILER_VERSION})
+  set(COVERAGE_FILE ${CMAKE_BINARY_DIR}/coverage.info)
+  add_custom_target(coverage
+    COMMAND lcov
+      --base-directory ${CMAKE_BINARY_DIR}
+      --directory ${CMAKE_BINARY_DIR}
+      --capture
+      --rc lcov_branch_coverage=1
+      --gcov-tool /usr/bin/gcov-${CMAKE_MATCH_1}
+      --output-file ${COVERAGE_FILE}
+    COMMAND lcov
+      --remove ${COVERAGE_FILE} */usr/include* boost* */.conan/* */tests/* 
+      --rc lcov_branch_coverage=1
+      --gcov-tool /usr/bin/gcov-${CMAKE_MATCH_1}
+      --output-file ${COVERAGE_FILE}
+    COMMAND genhtml
+      ${CMAKE_BINARY_DIR}/coverage.info
+      --branch-coverage
+      --output-directory ${CMAKE_BINARY_DIR}/coverage
+    USES_TERMINAL
+  )
+endif()

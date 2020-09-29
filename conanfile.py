@@ -13,8 +13,14 @@ class FetchppConan(ConanFile):
         "shared": [True, False],
         "fPIC": [True, False],
         "warn_as_error": [True, False],
+        "coverage": [True, False],
     }
-    default_options = {"shared": False, "fPIC": True, "warn_as_error": False}
+    default_options = {
+        "shared": False,
+        "fPIC": True,
+        "warn_as_error": False,
+        "coverage": False,
+    }
     generators = "cmake"
     exports_sources = "CMakeLists.txt", "libs/*"
     cmake = None
@@ -39,7 +45,8 @@ class FetchppConan(ConanFile):
         self.cmake = CMake(self)
         self.cmake.definitions["WARN_AS_ERROR"] = self.options.warn_as_error
         self.cmake.definitions["CMAKE_POSITION_INDEPENDENT_CODE"] = self.options.fPIC
-        self.cmake.definitions["ENABLE_TESTING"] = self.should_build_tests
+        self.cmake.definitions["BUILD_TESTING"] = self.should_build_tests
+        self.cmake.definitions["WITH_COVERAGE"] = self.options.coverage
 
     def build(self):
         self.init_cmake()
