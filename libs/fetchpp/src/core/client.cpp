@@ -20,7 +20,6 @@ client::client(net::executor ex,
                net::ssl::context context)
   : strand_(ex), timeout_(timeout), context_(std::move(context))
 {
-  set_verify_peer(false);
 }
 
 client::client(net::io_context& ioc,
