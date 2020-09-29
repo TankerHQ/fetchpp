@@ -1,8 +1,5 @@
 import argparse
-import os
-import sys
 
-from path import Path
 
 import tankerci
 import tankerci.cpp
