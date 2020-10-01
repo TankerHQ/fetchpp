@@ -1,8 +1,5 @@
 import argparse
-import os
-import sys
 
-from path import Path
 
 import tankerci
 import tankerci.cpp
@@ -32,11 +29,10 @@ def main() -> None:
     subparsers.add_parser("deploy")
     subparsers.add_parser("mirror")
 
-    tankerci.conan.update_config()
-
     args = parser.parse_args()
     if args.home_isolation:
         tankerci.conan.set_home_isolation()
+        tankerci.conan.update_config()
 
     if args.command == "build-and-test":
         build_and_test(args.profile, args.coverage)
