@@ -37,7 +37,7 @@ class FetchppConan(ConanFile):
 
     def build_requirements(self):
         self.build_requires("catch2/2.12.2")
-        self.build_requires("fmt/6.2.1")
+        self.build_requires("fmt/7.0.2")
 
     def init_cmake(self):
         if self.cmake:
