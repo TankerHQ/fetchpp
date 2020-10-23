@@ -9,7 +9,5 @@
 
 namespace fetchpp::http::detail
 {
-void set_options(options const& opt,
-                 std::string const& host,
-                 http::fields& fields);
+void set_options(std::string const& host, http::fields& fields);
 }

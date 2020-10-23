@@ -48,7 +48,7 @@ TEST_CASE_METHOD(ioc_fixture,
   auto url = fetchpp::http::url("https://127.0.0.2:444");
   auto session = fetchpp::session(
       fetchpp::secure_endpoint("127.0.0.2", 444), 3s, ioc, context);
-  auto request = fetchpp::http::make_request(fetchpp::http::verb::get, url);
+  auto request = fetchpp::http::request(fetchpp::http::verb::get, url);
   fetchpp::http::response response;
   REQUIRE_THROWS_MATCHES(
       session.push_request(request, response, boost::asio::use_future).get(),
@@ -68,8 +68,8 @@ TEST_CASE_METHOD(
   auto session = fetchpp::session(
       fetchpp::detail::to_endpoint<true>(url), 30s, ioc, context);
 
-  auto request = fetchpp::http::make_request(fetchpp::http::verb::get,
-                                             fetchpp::http::url("get"_https));
+  auto request = fetchpp::http::request(fetchpp::http::verb::get,
+                                        fetchpp::http::url("get"_https));
   {
     session.async_start(use_future).get();
     fetchpp::http::response response;
@@ -88,8 +88,8 @@ TEST_CASE_METHOD(ioc_fixture,
                                   std::chrono::seconds(30),
                                   ioc,
                                   context);
-  auto request = fetchpp::http::make_request(fetchpp::http::verb::get,
-                                             fetchpp::http::url("get"_https));
+  auto request = fetchpp::http::request(fetchpp::http::verb::get,
+                                        fetchpp::http::url("get"_https));
   {
     fetchpp::http::response response;
     session.push_request(request, response, boost::asio::use_future).get();
@@ -110,7 +110,7 @@ TEST_CASE_METHOD(ioc_fixture,
 {
   ssl::context sslc(ssl::context::tlsv12_client);
   auto const url = fetchpp::http::url("delay/4"_http);
-  auto request = fetchpp::http::make_request(fetchpp::http::verb::get, url);
+  auto request = fetchpp::http::request(fetchpp::http::verb::get, url);
   auto session = fetchpp::session(
       fetchpp::secure_endpoint("10.255.255.1", 444), 3s, ioc, sslc);
   fetchpp::http::response response;
@@ -127,7 +127,7 @@ TEST_CASE_METHOD(ioc_fixture,
   auto const url = fetchpp::http::url("delay/4"_http);
   auto session =
       fetchpp::session(fetchpp::detail::to_endpoint<false>(url), 2s, ex);
-  auto request = fetchpp::http::make_request(fetchpp::http::verb::get, url);
+  auto request = fetchpp::http::request(fetchpp::http::verb::get, url);
   fetchpp::http::response response;
   REQUIRE_THROWS_MATCHES(
       session.push_request(request, response, fetchpp::net::use_future).get(),
@@ -142,10 +142,8 @@ TEST_CASE("session executes multiple requests pushed", "[session][push]")
   auto const url = fetchpp::http::url("get"_https);
   auto session =
       fetchpp::session(fetchpp::detail::to_endpoint(url), 30s, ioc, context);
-  auto request = fetchpp::http::make_request(fetchpp::http::verb::get, url);
-  auto request2 = fetchpp::http::make_request<
-      fetchpp::http::request<fetchpp::http::json_body>>(
-      fetchpp::http::verb::get, url);
+  auto request = fetchpp::http::request(fetchpp::http::verb::get, url);
+  auto request2 = fetchpp::http::request(fetchpp::http::verb::get, url);
 
   fetchpp::http::response response;
   auto fut = session.push_request(request, response, fetchpp::net::use_future);
@@ -172,10 +170,8 @@ TEST_CASE_METHOD(ioc_fixture,
   auto session =
       fetchpp::session(fetchpp::detail::to_endpoint<false>(urlget), 2s, ex);
 
-  auto get = fetchpp::http::make_request(fetchpp::http::verb::get, urlget);
-  auto delay = fetchpp::http::make_request<
-      fetchpp::http::request<fetchpp::http::json_body>>(
-      fetchpp::http::verb::get, urldelay);
+  auto get = fetchpp::http::request(fetchpp::http::verb::get, urlget);
+  auto delay = fetchpp::http::request(fetchpp::http::verb::get, urldelay);
 
   fetchpp::http::response response;
   auto fut = session.push_request(get, response, fetchpp::net::use_future);
@@ -205,8 +201,7 @@ TEST_CASE_METHOD(ioc_fixture,
       fetchpp::detail::to_endpoint<true>(urldelay), 5s, ex, context);
 
   {
-    auto delay =
-        fetchpp::http::make_request(fetchpp::http::verb::get, urldelay);
+    auto delay = fetchpp::http::request(fetchpp::http::verb::get, urldelay);
     std::vector<fetchpp::http::response> responses;
     std::vector<std::future<void>> futures;
     for (int i = 1; i < 10; ++i)
@@ -232,7 +227,7 @@ TEST_CASE_METHOD(ioc_fixture,
   // wait for the connecton to established
   {
     auto const urlget = fetchpp::http::url("get"_https);
-    auto get = fetchpp::http::make_request(fetchpp::http::verb::get, urlget);
+    auto get = fetchpp::http::request(fetchpp::http::verb::get, urlget);
     fetchpp::http::response response;
     auto fut = session.push_request(get, response, fetchpp::net::use_future);
     REQUIRE_NOTHROW(fut.get());
@@ -240,8 +235,7 @@ TEST_CASE_METHOD(ioc_fixture,
   }
 
   {
-    auto delay =
-        fetchpp::http::make_request(fetchpp::http::verb::get, urldelay);
+    auto delay = fetchpp::http::request(fetchpp::http::verb::get, urldelay);
     std::vector<fetchpp::http::response> responses(10);
     std::vector<std::future<void>> futures;
     for (int i = 1; i < 10; ++i)
@@ -267,8 +261,8 @@ TEST_CASE_METHOD(ioc_fixture,
                                fetchpp::detail::to_endpoint<true>(url)};
   auto session = fetchpp::session(tunnel, 30s, ex, ctx);
 
-  auto request = fetchpp::http::make_request(fetchpp::http::verb::get,
-                                             fetchpp::http::url("get"_https));
+  auto request = fetchpp::http::request(fetchpp::http::verb::get,
+                                        fetchpp::http::url("get"_https));
   {
     session.async_start(use_future).get();
     fetchpp::http::response response;

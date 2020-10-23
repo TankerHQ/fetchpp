@@ -119,7 +119,7 @@ struct async_tunnel_connect_op
 
 template <typename Transport>
 async_tunnel_connect_op(tunnel_endpoint, Transport&)
-    ->async_tunnel_connect_op<Transport>;
+    -> async_tunnel_connect_op<Transport>;
 
 template <typename CompletionToken>
 auto do_async_close(tunnel_async_transport& ts, CompletionToken&& token);

@@ -4,30 +4,34 @@
 
 #include <fetchpp/http/headers.hpp>
 
+#include <boost/asio/buffer.hpp>
+
+#include <fetchpp/alias/net.hpp>
+
 namespace fetchpp
 {
-template <typename Request, typename CompletionToken>
+template <typename CompletionToken>
 auto async_post(net::executor ex,
                 std::string const& url_str,
-                typename Request::body_type::value_type data,
+                net::const_buffer body,
                 http::headers fields,
                 CompletionToken&& token)
 {
-  auto request = http::make_request<Request>(
-      http::verb::post, http::url(url_str), {}, std::move(data));
+  auto request = http::request(http::verb::post, http::url(url_str));
+  request.content(body);
   for (auto const& field : fields)
     request.insert(field.field, field.field_name, field.value);
   return async_fetch(
       ex, std::move(request), std::forward<CompletionToken>(token));
 }
 
-template <typename Request, typename CompletionToken>
+template <typename CompletionToken>
 auto async_post(net::executor ex,
                 std::string_view url_str,
-                typename Request::body_type::value_type data,
+                net::const_buffer body,
                 CompletionToken&& token)
 {
   return async_post(
-      ex, url_str, std::move(data), {}, std::forward<CompletionToken>(token));
+      ex, url_str, std::move(body), {}, std::forward<CompletionToken>(token));
 }
 }

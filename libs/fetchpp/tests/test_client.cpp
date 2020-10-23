@@ -31,9 +31,7 @@ TEST_CASE_METHOD(ioc_fixture, "client push one request", "[client][http]")
 {
   fetchpp::client cl{ioc};
   auto const url = fetchpp::http::url("get"_https);
-  auto request = fetchpp::http::make_request<
-      fetchpp::http::request<fetchpp::http::json_body>>(
-      fetchpp::http::verb::get, url);
+  auto request = fetchpp::http::request(fetchpp::http::verb::get, url);
 
   auto res = cl.async_fetch(std::move(request), boost::asio::use_future).get();
   REQUIRE(res.result_int() == 200);
@@ -47,8 +45,8 @@ TEST_CASE_METHOD(ioc_fixture, "client push two requests", "[client][http]")
   fetchpp::client cl{ioc};
   auto const url = fetchpp::http::url("get"_http);
   auto const surl = fetchpp::http::url("get"_https);
-  auto request = fetchpp::http::make_request(fetchpp::http::verb::get, url);
-  auto srequest = fetchpp::http::make_request(fetchpp::http::verb::get, surl);
+  auto request = fetchpp::http::request(fetchpp::http::verb::get, url);
+  auto srequest = fetchpp::http::request(fetchpp::http::verb::get, surl);
 
   auto res = cl.async_fetch(request, boost::asio::use_future).get();
   REQUIRE(res.result_int() == 200);
@@ -62,9 +60,8 @@ TEST_CASE_METHOD(ioc_fixture, "client with delay", "[client][http][delay]")
   fetchpp::client cl{ioc, 2s};
   auto const get = fetchpp::http::url("get"_http);
   auto const delay = fetchpp::http::url("delay/3"_https);
-  auto getrequest = fetchpp::http::make_request(fetchpp::http::verb::get, get);
-  auto delayrequest =
-      fetchpp::http::make_request(fetchpp::http::verb::get, delay);
+  auto getrequest = fetchpp::http::request(fetchpp::http::verb::get, get);
+  auto delayrequest = fetchpp::http::request(fetchpp::http::verb::get, delay);
 
   REQUIRE_THROWS_MATCHES(
       cl.async_fetch(delayrequest, boost::asio::use_future).get(),
@@ -85,9 +82,9 @@ TEST_CASE_METHOD(ioc_fixture,
 
   fetchpp::client cl{ioc, 5s};
   auto getrequest =
-      fetchpp::http::make_request(fetchpp::http::verb::get, url("get"_https));
-  auto delayrequest = fetchpp::http::make_request(fetchpp::http::verb::get,
-                                                  url("delay/1"_https));
+      fetchpp::http::request(fetchpp::http::verb::get, url("get"_https));
+  auto delayrequest =
+      fetchpp::http::request(fetchpp::http::verb::get, url("delay/1"_https));
   // wait for the connection to established
   std::vector<std::future<fetchpp::http::response>> futures;
   for (int i = 0; i < 10; ++i)
@@ -116,9 +113,9 @@ TEST_CASE_METHOD(ioc_fixture,
 
   fetchpp::client cl{ioc, 5s};
   auto getrequest =
-      fetchpp::http::make_request(fetchpp::http::verb::get, url("get"_http));
-  auto delayrequest = fetchpp::http::make_request(fetchpp::http::verb::get,
-                                                  url("delay/1"_http));
+      fetchpp::http::request(fetchpp::http::verb::get, url("get"_http));
+  auto delayrequest =
+      fetchpp::http::request(fetchpp::http::verb::get, url("delay/1"_http));
   // wait for the connection to established
   std::vector<std::future<fetchpp::http::response>> futures;
   for (int i = 0; i < 10; ++i)
@@ -143,8 +140,7 @@ TEST_CASE_METHOD(ioc_fixture,
 {
   fetchpp::client cl{ioc, 2s};
   auto const delay = fetchpp::http::url("delay/1"_https);
-  auto delayrequest =
-      fetchpp::http::make_request(fetchpp::http::verb::get, delay);
+  auto delayrequest = fetchpp::http::request(fetchpp::http::verb::get, delay);
 
   std::vector<std::future<fetchpp::http::response>> futures;
   for (int i = 1; i < 5; ++i)
@@ -162,8 +158,7 @@ TEST_CASE_METHOD(ioc_fixture,
 {
   fetchpp::client cl{ioc, 2s};
   auto const delay = fetchpp::http::url("delay/1"_http);
-  auto delayrequest =
-      fetchpp::http::make_request(fetchpp::http::verb::get, delay);
+  auto delayrequest = fetchpp::http::request(fetchpp::http::verb::get, delay);
   std::vector<std::future<fetchpp::http::response>> futures;
   for (int i = 1; i < 5; ++i)
     futures.push_back(cl.async_fetch(delayrequest, boost::asio::use_future));
@@ -179,7 +174,7 @@ TEST_CASE_METHOD(ioc_fixture,
 {
   fetchpp::client cl{ioc, 2s};
   auto const delay = fetchpp::http::url("get"_https);
-  auto request = fetchpp::http::make_request(fetchpp::http::verb::get, delay);
+  auto request = fetchpp::http::request(fetchpp::http::verb::get, delay);
   cl.add_proxy(fetchpp::http::proxy_scheme::https,
                fetchpp::http::proxy(get_test_proxy()));
   ssl::context ctx(ssl::context::tlsv12_client);
