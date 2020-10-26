@@ -1,6 +1,5 @@
 #include <fetchpp/client.hpp>
 
-#include <fetchpp/http/json_body.hpp>
 #include <fetchpp/http/request.hpp>
 
 #include <boost/asio/use_future.hpp>

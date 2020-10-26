@@ -7,7 +7,6 @@
 
 #include <fetchpp/http/authorization.hpp>
 #include <fetchpp/http/content_type.hpp>
-#include <fetchpp/http/json_body.hpp>
 #include <fetchpp/http/response.hpp>
 
 #include <boost/asio/ip/tcp.hpp>

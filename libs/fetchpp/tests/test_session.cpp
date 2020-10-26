@@ -1,10 +1,8 @@
-// #include <fetchpp/client.hpp>
 #include <fmt/format.h>
 
 #include <fetchpp/core/session.hpp>
 
 #include <fetchpp/core/ssl_transport.hpp>
-#include <fetchpp/http/json_body.hpp>
 #include <fetchpp/http/request.hpp>
 #include <fetchpp/http/response.hpp>
 
@@ -96,7 +94,7 @@ TEST_CASE_METHOD(ioc_fixture,
     REQUIRE(response.result_int() == 200);
   }
   {
-    fetchpp::beast::http::response<fetchpp::http::json_body> response;
+    fetchpp::http::response response;
     session.push_request(request, response, boost::asio::use_future).get();
     REQUIRE(response.result_int() == 200);
   }
