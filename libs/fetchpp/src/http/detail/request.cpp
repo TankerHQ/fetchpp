@@ -1,3 +1,4 @@
+#include <fetchpp/http/detail/request.hpp>
 #include <fetchpp/version.hpp>
 
 #include <boost/beast/http/fields.hpp>

@@ -14,12 +14,12 @@
 namespace fetchpp::http
 {
 template <typename DynamicBuffer>
-class simple_request : public message<true, DynamicBuffer>
+class basic_request : public message<true, DynamicBuffer>
 {
   using base_t = message<true, DynamicBuffer>;
 
 public:
-  simple_request(http::verb verb, url uri);
+  basic_request(http::verb verb, url uri);
 
   url const& uri() const;
 
@@ -30,17 +30,17 @@ private:
 // =================
 
 template <typename DynamicBuffer>
-simple_request<DynamicBuffer>::simple_request(http::verb verb, url uri)
+basic_request<DynamicBuffer>::basic_request(http::verb verb, url uri)
   : base_t(verb, uri.target(), 11), _uri(std::move(uri))
 {
   detail::set_options(_uri.host(), *this);
 }
 
 template <typename DynamicBuffer>
-url const& simple_request<DynamicBuffer>::uri() const
+url const& basic_request<DynamicBuffer>::uri() const
 {
   return _uri;
 }
 
-using request = simple_request<beast::multi_buffer>;
+using request = basic_request<beast::multi_buffer>;
 }
