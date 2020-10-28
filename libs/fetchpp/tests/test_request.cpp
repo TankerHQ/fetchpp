@@ -1,11 +1,17 @@
 #include <fetchpp/http/content_type.hpp>
-#include <fetchpp/http/json_body.hpp>
 #include <fetchpp/http/request.hpp>
 #include <fetchpp/http/url.hpp>
+
+#include <boost/beast/http/message.hpp>
+#include <boost/beast/http/vector_body.hpp>
+
+#include <nlohmann/json.hpp>
 
 #include <sstream>
 
 #include <catch2/catch.hpp>
+
+using namespace fetchpp::http::url_literals;
 
 class ContentTypeMatcher : public Catch::MatcherBase<std::string_view>
 {
@@ -63,36 +69,41 @@ TEST_CASE("parsing content_type", "[content_type]")
 
 TEST_CASE("request set host and port", "[custom_port]")
 {
-  using namespace fetchpp::http;
+  using namespace fetchpp;
   {
-    auto url = fetchpp::http::url("http://domain.com:2121/target");
-    auto request = make_request(verb::get, url);
-    REQUIRE(request[field::host] == "domain.com:2121");
+    auto const request =
+        http::request(http::verb::get, "http://domain.com:2121/target"_url);
+    REQUIRE(request[http::field::host] == "domain.com:2121");
   }
   {
-    auto url = fetchpp::http::url("http://domain.com/target");
-    url.set_port(4242);
-    auto request = make_request(verb::get, url);
-    REQUIRE(request[field::host] == "domain.com:4242");
+    auto const request =
+        http::request(http::verb::get, "http://domain.com:4242/target"_url);
+    REQUIRE(request[http::field::host] == "domain.com:4242");
   }
-}
-
-TEST_CASE("request content_type", "[request]")
-{
-  auto const req = fetchpp::http::make_request<
-      fetchpp::http::request<fetchpp::http::json_body>>(
-      fetchpp::http::verb::get, fetchpp::http::url("http://toto.com"), {});
-  REQUIRE(req[fetchpp::http::field::content_type] ==
-          "application/json; charset=utf-8");
-  REQUIRE(req.has_content_length());
 }
 
 TEST_CASE("request a complex url", "[request]")
 {
-  auto const req = fetchpp::http::make_request<
-      fetchpp::http::request<fetchpp::http::json_body>>(
+  auto const req = fetchpp::http::request(
       fetchpp::http::verb::get,
-      fetchpp::http::url("http://toto.com/hello/world?language=en_us#GB"),
-      {});
+      "http://toto.com/hello/world?language=en_us#GB"_url);
   REQUIRE(req.target() == "/hello/world?language=en_us#GB");
+}
+
+TEST_CASE("request a json body", "[request]")
+{
+  nlohmann::json v{{"key", "value"}};
+  auto req =
+      fetchpp::http::request(fetchpp::http::verb::get, "http://toto.tv"_url);
+  req.content(v.dump());
+  req.content_type(fetchpp::http::content_type("application/json", "utf8"));
+}
+
+TEST_CASE("request a buffer body", "[request]")
+{
+  std::vector vec = {1, 2, 3, 4, 5};
+  auto req =
+      fetchpp::http::request(fetchpp::http::verb::get, "http://toto.tv"_url);
+  req.content(fetchpp::net::buffer(vec));
+  req.content_type(fetchpp::http::content_type("application/json", "utf8"));
 }

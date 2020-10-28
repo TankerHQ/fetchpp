@@ -27,16 +27,13 @@ add_library(fetchpp
   include/fetchpp/core/process_one.hpp
   include/fetchpp/core/redirect_handling.hpp
 
-  include/fetchpp/http/detail/json_body.hpp
   include/fetchpp/http/authorization.hpp
   include/fetchpp/http/content_type.hpp
   include/fetchpp/http/field.hpp
   include/fetchpp/http/headers.hpp
   include/fetchpp/http/proxy.hpp
-  include/fetchpp/http/json_body.hpp
   include/fetchpp/http/request.hpp
   include/fetchpp/http/response.hpp
-  include/fetchpp/http/simple_response.hpp
   include/fetchpp/http/url.hpp
 
   include/fetchpp/alias/beast.hpp
@@ -52,12 +49,10 @@ add_library(fetchpp
   src/core/basic_transport.cpp
   src/core/client.cpp
   src/core/fetch.cpp
-  src/http/detail/json_body.cpp
   src/http/detail/request.cpp
   src/http/authorization.cpp
   src/http/content_type.cpp
   src/http/field_arg.cpp
-  src/http/response.cpp
   src/http/proxy.cpp
   src/http/url.cpp
   src/beast.cpp

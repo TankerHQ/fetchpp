@@ -55,8 +55,7 @@ TEST_CASE_METHOD(ioc_fixture, "transport one ssl", "[tunnel][https]")
 
   fetchpp::tunnel_async_transport ts(5s, ex, ctx);
   REQUIRE_NOTHROW(ts.async_connect(tunnel, boost::asio::use_future).get());
-  auto const request =
-      fetchpp::http::make_request(fetchpp::http::verb::get, url);
+  auto const request = fetchpp::http::request(fetchpp::http::verb::get, url);
   fetchpp::http::response response;
   REQUIRE_NOTHROW(
       fetchpp::async_process_one(ts, request, response, boost::asio::use_future)
@@ -77,8 +76,7 @@ TEST_CASE_METHOD(ioc_fixture,
                                fetchpp::detail::to_endpoint<true>(url)};
   fetchpp::tunnel_async_transport ts(1s, ex, ctx);
   REQUIRE_NOTHROW(ts.async_connect(tunnel, boost::asio::use_future).get());
-  auto const request =
-      fetchpp::http::make_request(fetchpp::http::verb::get, url);
+  auto const request = fetchpp::http::request(fetchpp::http::verb::get, url);
   fetchpp::http::response response;
   auto const now = std::chrono::high_resolution_clock::now();
   REQUIRE_THROWS_MATCHES(
@@ -103,8 +101,7 @@ TEST_CASE_METHOD(ioc_fixture,
 
   fetchpp::tunnel_async_transport ts(5s, ex, ctx);
   REQUIRE_NOTHROW(ts.async_connect(tunnel, boost::asio::use_future).get());
-  auto const request =
-      fetchpp::http::make_request(fetchpp::http::verb::get, url);
+  auto const request = fetchpp::http::request(fetchpp::http::verb::get, url);
   fetchpp::http::response response;
   REQUIRE_NOTHROW(
       fetchpp::async_process_one(ts, request, response, boost::asio::use_future)

@@ -38,8 +38,7 @@ TEST_CASE_METHOD(ioc_fixture,
   fetchpp::beast::ssl_stream<fetchpp::beast::tcp_stream> stream(ioc, context);
   fetchpp::beast::flat_buffer buffer;
   auto const url = fetchpp::http::url("/get"_https);
-  fetchpp::http::request<fetchpp::http::empty_body> request(
-      fetchpp::http::verb::get, url, fetchpp::options{});
+  auto request = fetchpp::http::request(fetchpp::http::verb::get, url);
   fetchpp::beast::http::response<fetchpp::http::string_body> response;
 
   https_connect(ioc, stream, url);
@@ -60,8 +59,7 @@ TEST_CASE_METHOD(ioc_fixture,
   fetchpp::beast::ssl_stream<fetchpp::beast::tcp_stream> stream(ioc, context);
   fetchpp::beast::flat_buffer buffer;
   auto const url = fetchpp::http::url("/get"_https);
-  fetchpp::http::request<fetchpp::http::empty_body> request(
-      fetchpp::http::verb::get, url, fetchpp::options{});
+  auto request = fetchpp::http::request(fetchpp::http::verb::get, url);
   fetchpp::http::response response;
 
   https_connect(ioc, stream, url);
@@ -73,7 +71,7 @@ TEST_CASE_METHOD(ioc_fixture,
   REQUIRE(response.at(fetchpp::http::field::content_type) ==
           "application/json");
   REQUIRE(response.is_json());
-  REQUIRE_NOTHROW(response.json());
+  REQUIRE_NOTHROW(response.text());
 }
 
 TEST_CASE_METHOD(ioc_fixture, "connect", "[https][connect][async]")
@@ -83,8 +81,7 @@ TEST_CASE_METHOD(ioc_fixture, "connect", "[https][connect][async]")
   fetchpp::beast::flat_buffer buffer;
 
   auto const url = fetchpp::http::url("/get"_https);
-  auto request = fetchpp::http::make_request(
-      fetchpp::http::verb::get, url, fetchpp::options{});
+  auto request = fetchpp::http::request(fetchpp::http::verb::get, url);
   request.set(fetchpp::http::field::host, std::string{get_test_host()});
   request.set(fetchpp::http::field::user_agent, fetchpp::USER_AGENT);
   fetchpp::http::response response;
@@ -96,8 +93,7 @@ TEST_CASE_METHOD(ioc_fixture, "connect", "[https][connect][async]")
       stream, buffer, request, response, boost::asio::use_future);
   fut2.get();
   REQUIRE(response.result_int() == 200);
-  REQUIRE(response.at(fetchpp::http::field::content_type) ==
-          "application/json");
+  REQUIRE(response.is_json());
 }
 
 TEST_CASE_METHOD(ioc_fixture,
@@ -110,9 +106,8 @@ TEST_CASE_METHOD(ioc_fixture,
 
   auto data = std::string("my dearest data");
   auto const url = fetchpp::http::url("/anything"_https);
-  auto request = fetchpp::http::make_request<
-      fetchpp::http::request<fetchpp::http::span_body<char>>>(
-      fetchpp::http::verb::post, url, {}, boost::beast::span<char>(data));
+  auto request = fetchpp::http::request(fetchpp::http::verb::post, url);
+  request.content(data);
   request.set(fetchpp::http::field::content_type, "text/plain");
   fetchpp::http::response response;
 
@@ -122,6 +117,6 @@ TEST_CASE_METHOD(ioc_fixture,
       stream, buffer, request, response, boost::asio::use_future);
   fut2.get();
   REQUIRE(response.result_int() == 200);
-  REQUIRE(response.content_type().type() == "application/json");
+  REQUIRE(response.content_type()->type() == "application/json");
   REQUIRE(nlohmann::json::parse(response.text()).at("data") == data);
 }

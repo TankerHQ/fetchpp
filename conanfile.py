@@ -68,6 +68,3 @@ class FetchppConan(ConanFile):
         self.cpp_info.defines.append("BOOST_BEAST_SEPARATE_COMPILATION")
         self.cpp_info.defines.append("BOOST_BEAST_USE_STD_STRING_VIEW")
         self.cpp_info.libs = ["fetchpp"]
-        if not self.in_local_cache:
-            self.cpp_info.includedirs = ["libs/fetchpp/include"]
-            self.cpp_info.libdirs = ["build-default/lib"]

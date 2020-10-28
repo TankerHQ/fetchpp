@@ -58,7 +58,7 @@ template <typename AsyncStream,
           typename Buffer,
           typename ResponseParser,
           typename CompletionToken,
-          bool = ResponseParser::is_request::value == false>
+          std::enable_if_t<ResponseParser::is_request::value == false, int> = 0>
 auto run_async_read(AsyncStream& stream,
                     Buffer& buffer,
                     ResponseParser& parser,
@@ -70,7 +70,7 @@ auto run_async_read(AsyncStream& stream,
 template <typename AsyncStream,
           typename Request,
           typename CompletionToken,
-          bool = Request::is_request::value == true>
+          std::enable_if_t<Request::is_request::value == true, int> = 0>
 auto run_async_write(AsyncStream& stream,
                      Request& request,
                      CompletionToken&& token)
@@ -112,7 +112,7 @@ template <typename AsyncStream,
           typename ResponseParser,
           typename Buffer>
 parser_op(AsyncStream&, Request&, ResponseParser&, Buffer&)
-    ->parser_op<AsyncStream, Request, ResponseParser, Buffer>;
+    -> parser_op<AsyncStream, Request, ResponseParser, Buffer>;
 
 template <typename AsyncStream,
           typename Request,
@@ -181,6 +181,8 @@ struct transport_op
   }
 };
 }
+
+// ======
 
 template <typename AsyncStream,
           typename Buffer,
