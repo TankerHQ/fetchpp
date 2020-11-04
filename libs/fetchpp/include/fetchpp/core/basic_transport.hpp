@@ -60,7 +60,7 @@ struct async_basic_connect_op
 };
 template <typename AsyncStream>
 async_basic_connect_op(detail::base_endpoint&, AsyncStream&)
-    ->async_basic_connect_op<AsyncStream>;
+    -> async_basic_connect_op<AsyncStream>;
 }
 
 template <typename AsyncStream, typename DynamicBuffer>

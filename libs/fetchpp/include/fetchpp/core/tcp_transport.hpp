@@ -47,7 +47,7 @@ struct async_tcp_connect_op
 template <typename AsyncTransport>
 async_tcp_connect_op(AsyncTransport&,
                      std::unique_ptr<tcp::resolver::results_type>)
-    ->async_tcp_connect_op<AsyncTransport>;
+    -> async_tcp_connect_op<AsyncTransport>;
 
 template <typename AsyncStream>
 struct async_tcp_close_op
@@ -72,7 +72,7 @@ struct async_tcp_close_op
   }
 };
 template <typename AsyncStream>
-async_tcp_close_op(AsyncStream&)->async_tcp_close_op<AsyncStream>;
+async_tcp_close_op(AsyncStream&) -> async_tcp_close_op<AsyncStream>;
 }
 
 template <typename Executor,
