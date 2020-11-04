@@ -2,9 +2,9 @@
 
 #include <boost/beast/http/fields.hpp>
 #include <fetchpp/http/url.hpp>
-#include <variant>
 
 #include <boost/container/flat_map.hpp>
+#include <boost/variant2/variant.hpp>
 
 #include <fetchpp/alias/http.hpp>
 
@@ -33,7 +33,7 @@ public:
   http::fields const& fields() const;
 };
 
-using proxy_match = std::variant<proxy_scheme, std::string>;
+using proxy_match = boost::variant2::variant<proxy_scheme, std::string>;
 using proxy_map = boost::container::flat_map<proxy_match, proxy>;
 
 std::optional<proxy> select_proxy(proxy_map const& proxy, http::url const& url);
