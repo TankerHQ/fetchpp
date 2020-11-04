@@ -1,41 +1,32 @@
 #pragma once
 
-#include <fetchpp/http/url.hpp>
-
 #include <boost/asio/io_context.hpp>
+#include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl/stream.hpp>
+#include <skyr/url.hpp>
 
-#include <fetchpp/alias/net.hpp>
-#include <fetchpp/alias/tcp.hpp>
+#include <boost/beast/core/stream_traits.hpp>
 
 namespace test::helpers
 {
-inline auto http_resolve_domain(fetchpp::net::io_context& ioc,
-                                fetchpp::http::url const& url)
+namespace net = boost::asio;
+namespace bb = boost::beast;
+
+net::ip::tcp::resolver::results_type http_resolve_domain(net::executor ex,
+                                                         skyr::url const& url);
+
+template <typename Stream>
+void http_connect(Stream& stream, skyr::url const& url)
 {
-  fetchpp::tcp::resolver resolver(ioc);
-  auto port = fetchpp::http::safe_port(url);
-  return resolver.resolve(url.hostname(),
-                          std::to_string(port),
-                          boost::asio::ip::resolver_base::numeric_service);
+  auto results = http_resolve_domain(stream.get_executor(), url);
+  bb::get_lowest_layer(stream).connect(results);
 }
 
 template <typename Stream>
-void http_connect(fetchpp::net::io_context& ioc,
-                  Stream& stream,
-                  fetchpp::http::url const& url)
+void https_connect(Stream& stream, skyr::url const& url)
 {
-  auto results = http_resolve_domain(ioc, url);
-  fetchpp::beast::get_lowest_layer(stream).connect(results);
-}
-
-template <typename Stream>
-void https_connect(fetchpp::net::io_context& ioc,
-                   Stream& stream,
-                   fetchpp::http::url const& url)
-{
-  http_connect(ioc, stream, url);
-  stream.handshake(fetchpp::net::ssl::stream_base::client);
+  http_connect(stream, url);
+  stream.handshake(net::ssl::stream_base::client);
 }
 
 }

@@ -3,8 +3,9 @@ project(fetchpp-functional-tests)
 add_library(test_helpers
   helpers/format.cpp
   helpers/test_domain.cpp
+  helpers/https_connect.cpp
 )
-target_link_libraries(test_helpers CONAN_PKG::boost CONAN_PKG::fmt CONAN_PKG::nlohmann_json)
+target_link_libraries(test_helpers CONAN_PKG::skyr-url CONAN_PKG::boost CONAN_PKG::fmt CONAN_PKG::nlohmann_json)
 
 add_executable(test_unitary
   test_request.cpp
