@@ -22,6 +22,8 @@ public:
   basic_request(http::verb verb, url uri);
 
   url const& uri() const;
+  void accept(std::string_view ct);
+  void accept(http::content_type const& ct);
 
 private:
   url _uri;
@@ -40,6 +42,18 @@ template <typename DynamicBuffer>
 url const& basic_request<DynamicBuffer>::uri() const
 {
   return _uri;
+}
+
+template <typename DynamicBuffer>
+void basic_request<DynamicBuffer>::accept(std::string_view ct)
+{
+  this->set(http::field::accept, ct);
+}
+
+template <typename DynamicBuffer>
+void basic_request<DynamicBuffer>::accept(http::content_type const& ct)
+{
+  this->set(http::field::accept, ct);
 }
 
 using request = basic_request<beast::multi_buffer>;

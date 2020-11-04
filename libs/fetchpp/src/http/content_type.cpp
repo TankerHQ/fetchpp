@@ -5,9 +5,16 @@
 
 namespace fetchpp::http
 {
-content_type::content_type(std::string type,
-                           std::string charset,
-                           std::string boundary)
+content_type::content_type(std::string_view type,
+                           std::string_view charset,
+                           std::string_view boundary)
+  : base_t{std::string(type), std::string(charset), std::string(boundary)}
+{
+}
+
+content_type::content_type(std::string&& type,
+                           std::string&& charset,
+                           std::string&& boundary)
   : base_t{std::move(type), std::move(charset), std::move(boundary)}
 {
 }
@@ -22,7 +29,7 @@ content_type content_type::parse(std::string_view sv)
   auto const str = std::string{sv};
   if (!std::regex_match(str.cbegin(), str.cend(), match, reg))
     throw std::domain_error("malformed content type");
-  return content_type{match[1], match[2], match[3]};
+  return content_type(match[1], match[2], match[3]);
 }
 
 std::string const& content_type::type() const

@@ -18,9 +18,10 @@ class ContentTypeMatcher : public Catch::MatcherBase<std::string_view>
   fetchpp::http::content_type ref_ct;
 
 public:
-  template <typename... Args>
-  ContentTypeMatcher(Args&&... args)
-    : ref_ct(fetchpp::http::content_type(std::forward<Args>(args)...))
+  ContentTypeMatcher(std::string_view type,
+                     std::string_view charset = "",
+                     std::string_view boundary = "")
+    : ref_ct(fetchpp::http::content_type(type, charset, boundary))
   {
   }
 
@@ -42,10 +43,11 @@ public:
   }
 };
 
-template <typename... Args>
-inline ContentTypeMatcher Equals(Args&&... args)
+inline ContentTypeMatcher Equals(std::string_view type,
+                                 std::string_view charset = "",
+                                 std::string_view boundary = "")
 {
-  return ContentTypeMatcher(std::forward<Args>(args)...);
+  return ContentTypeMatcher(type, charset, boundary);
 }
 
 TEST_CASE("parsing content_type", "[content_type]")
@@ -96,7 +98,7 @@ TEST_CASE("request a json body", "[request]")
   auto req =
       fetchpp::http::request(fetchpp::http::verb::get, "http://toto.tv"_url);
   req.content(v.dump());
-  req.content_type(fetchpp::http::content_type("application/json", "utf8"));
+  req.set(fetchpp::http::content_type("application/json", "utf8"));
 }
 
 TEST_CASE("request a buffer body", "[request]")
@@ -105,5 +107,5 @@ TEST_CASE("request a buffer body", "[request]")
   auto req =
       fetchpp::http::request(fetchpp::http::verb::get, "http://toto.tv"_url);
   req.content(fetchpp::net::buffer(vec));
-  req.content_type(fetchpp::http::content_type("application/json", "utf8"));
+  req.set(fetchpp::http::content_type("application/json", "utf8"));
 }
