@@ -4,6 +4,8 @@
 #include <fetchpp/core/detail/close_ssl.hpp>
 #include <fetchpp/core/endpoint.hpp>
 #include <fetchpp/core/process_one.hpp>
+#include <fetchpp/http/request.hpp>
+#include <fetchpp/http/response.hpp>
 
 #include <boost/asio/compose.hpp>
 #include <boost/asio/executor.hpp>
@@ -11,9 +13,6 @@
 #include <boost/asio/ssl/context.hpp>
 #include <boost/beast/core/multi_buffer.hpp>
 #include <boost/beast/core/tcp_stream.hpp>
-#include <boost/beast/http/empty_body.hpp>
-#include <boost/beast/http/message.hpp>
-#include <boost/beast/http/string_body.hpp>
 #include <boost/beast/ssl/ssl_stream.hpp>
 
 #include <fetchpp/alias/beast.hpp>
@@ -30,15 +29,12 @@ namespace detail
 {
 struct http_messages
 {
-  using body_t = beast::http::empty_body;
-  using request_t = beast::http::request<body_t>;
-  using response_t = beast::http::response<body_t>;
-
+  using request_t = http::message<true, beast::multi_buffer>;
   http_messages(request_t req) : request(std::move(req)), response()
   {
   }
   request_t request;
-  response_t response;
+  http::response response;
 };
 
 template <typename Transport>
@@ -72,8 +68,8 @@ struct async_tunnel_connect_op
       beast::get_lowest_layer(transport_)
           .socket()
           .set_option(net::ip::tcp::no_delay{true});
-      transaction_ = std::make_unique<http_messages>(http_messages::request_t{
-          beast::http::verb::connect, endpoint_.target.host(), 11});
+      transaction_ = std::make_unique<http_messages>(http_messages::request_t(
+          beast::http::verb::connect, endpoint_.target.host(), 11));
       transaction_->request.set(beast::http::field::host,
                                 endpoint_.target.host());
       transaction_->request.set(beast::http::field::proxy_connection,
