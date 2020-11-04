@@ -32,11 +32,24 @@ using dynamic_body_message =
 template <bool isRequest, typename DynamicBuffer>
 class message : public detail::dynamic_body_message<isRequest, DynamicBuffer>
 {
+
 public:
   using base_t = detail::dynamic_body_message<isRequest, DynamicBuffer>;
 
+protected:
   using base_t::base_t;
-  using base_t::operator=;
+
+public:
+  message() = default;
+  message(message const&) = default;
+  message(message&&) = default;
+  message(base_t&& other);
+  message(base_t const& other);
+
+  message& operator=(base_t&& other);
+  message& operator=(base_t const& other);
+  message& operator=(message const&) = default;
+  message& operator=(message&&) = default;
 
   bool has_content_type() const;
   std::optional<http::content_type> content_type() const;
@@ -62,6 +75,33 @@ public:
 };
 
 //==========
+
+template <bool isRequest, typename DynamicBuffer>
+message<isRequest, DynamicBuffer>::message(base_t&& other)
+  : base_t(std::move(other))
+{
+}
+
+template <bool isRequest, typename DynamicBuffer>
+message<isRequest, DynamicBuffer>::message(base_t const& other) : base_t(other)
+{
+}
+
+template <bool isRequest, typename DynamicBuffer>
+message<isRequest, DynamicBuffer>& message<isRequest, DynamicBuffer>::operator=(
+    base_t&& other)
+{
+  this->base_t::operator=(std::move(other));
+  return *this;
+}
+
+template <bool isRequest, typename DynamicBuffer>
+message<isRequest, DynamicBuffer>& message<isRequest, DynamicBuffer>::operator=(
+    base_t const& other)
+{
+  this->base_t::operator=(other);
+  return *this;
+}
 
 template <bool isRequest, typename DynamicBuffer>
 std::optional<std::size_t> message<isRequest, DynamicBuffer>::content_length()
