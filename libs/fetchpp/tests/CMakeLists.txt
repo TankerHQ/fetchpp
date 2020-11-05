@@ -4,6 +4,7 @@ add_library(test_helpers
   helpers/format.cpp
   helpers/test_domain.cpp
   helpers/https_connect.cpp
+  helpers/worker_fixture.cpp
 )
 target_link_libraries(test_helpers CONAN_PKG::skyr-url CONAN_PKG::boost CONAN_PKG::fmt CONAN_PKG::nlohmann_json)
 
