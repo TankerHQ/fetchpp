@@ -20,7 +20,6 @@ target_link_libraries(test_unitary test_helpers fetchpp CONAN_PKG::skyr-url CONA
 
 add_executable(test_functional
   tests.cpp
-  test_process_one.cpp
   main.cpp
 )
 target_link_libraries(test_functional test_helpers fetchpp CONAN_PKG::catch2 CONAN_PKG::fmt CONAN_PKG::nlohmann_json)
@@ -49,8 +48,15 @@ add_executable(test_client
 )
 target_link_libraries(test_client test_helpers fetchpp CONAN_PKG::catch2 CONAN_PKG::fmt CONAN_PKG::nlohmann_json)
 
+add_executable(test_process
+  test_process_one.cpp
+  main.cpp
+)
+target_link_libraries(test_process test_helpers fetchpp CONAN_PKG::catch2 CONAN_PKG::fmt CONAN_PKG::nlohmann_json)
+
 add_test(NAME test_unitary COMMAND test_unitary)
 add_test(NAME test_transport COMMAND test_transport)
+add_test(NAME test_process COMMAND test_process)
 
 if(UNIX AND NOT APPLE)
   add_test(NAME test_proxy_transport COMMAND test_proxy_transport)
