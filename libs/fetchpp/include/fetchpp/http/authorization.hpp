@@ -4,7 +4,7 @@
 #include <string>
 #include <string_view>
 
-#include <variant>
+#include <boost/variant2/variant.hpp>
 
 namespace fetchpp::http::authorization
 {
@@ -34,7 +34,7 @@ public:
 };
 std::ostream& operator<<(std::ostream& os, basic const& ct);
 
-using methods = std::variant<basic, bearer>;
+using methods = boost::variant2::variant<basic, bearer>;
 
 std::ostream& operator<<(std::ostream& os, methods const& m);
 }

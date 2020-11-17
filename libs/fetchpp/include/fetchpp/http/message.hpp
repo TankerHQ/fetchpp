@@ -53,7 +53,8 @@ public:
 
   bool has_content_type() const;
   std::optional<http::content_type> content_type() const;
-  void content_type(http::content_type ctype);
+  void content_type(std::string_view ct);
+  void set(http::content_type const& ctype);
 
   std::optional<std::size_t> content_length() const;
 
@@ -138,9 +139,15 @@ message<isRequest, DynamicBuffer>::content_type() const
 }
 
 template <bool isRequest, typename DynamicBuffer>
-void message<isRequest, DynamicBuffer>::content_type(http::content_type ctype)
+void message<isRequest, DynamicBuffer>::set(http::content_type const& ctype)
 {
-  this->insert(http::field::content_type, ctype);
+  this->set(http::field::content_type, ctype);
+}
+
+template <bool isRequest, typename DynamicBuffer>
+void message<isRequest, DynamicBuffer>::content_type(std::string_view ctype)
+{
+  this->set(http::field::content_type, ctype);
 }
 
 template <bool isRequest, typename DynamicBuffer>

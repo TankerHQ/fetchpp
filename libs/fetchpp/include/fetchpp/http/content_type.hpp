@@ -15,10 +15,16 @@ class content_type : private std::array<std::string, 3>
 public:
   content_type() = default;
 
-  explicit content_type(std::string type,
-                        std::string charset = "",
-                        std::string boundary = "");
+  explicit content_type(std::string_view type,
+                        std::string_view charset = "",
+                        std::string_view boundary = "");
 
+private:
+  explicit content_type(std::string&& type,
+                        std::string&& charset,
+                        std::string&& boundary);
+
+public:
   static content_type parse(std::string_view sv);
 
   std::string const& type() const;

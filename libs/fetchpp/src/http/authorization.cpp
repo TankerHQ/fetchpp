@@ -50,7 +50,7 @@ std::ostream& operator<<(std::ostream& os, basic const& b)
 
 std::ostream& operator<<(std::ostream& os, methods const& m)
 {
-  std::visit([&os](auto&& m) { os << m; }, m);
+  boost::variant2::visit([&os](auto&& m) { os << m; }, m);
   return os;
 }
 
