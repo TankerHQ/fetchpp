@@ -120,13 +120,22 @@ template <typename AsyncStream,
           typename Buffer>
 struct stream_op
 {
-  AsyncStream& stream;
-  Request& req;
-  Response& res;
-  Buffer& buffer;
+  AsyncStream& stream_;
+  Request& req_;
+  Response& res_;
+  Buffer& buffer_;
   using parser_t = beast::http::response_parser<typename Response::body_type>;
-  std::unique_ptr<parser_t> parser = std::make_unique<parser_t>();
-  net::coroutine coro = net::coroutine{};
+  std::unique_ptr<parser_t> parser_;
+  net::coroutine coro_ = net::coroutine{};
+
+  stream_op(AsyncStream& stream, Request& req, Response& res, Buffer& buf)
+    : stream_(stream),
+      req_(req),
+      res_(res),
+      buffer_(buf),
+      parser_(std::make_unique<parser_t>())
+  {
+  }
 
   template <typename Self>
   void operator()(Self& self, error_code ec = error_code{}, std::size_t = 0)
@@ -137,15 +146,15 @@ struct stream_op
       return;
     }
 
-    FETCHPP_REENTER(coro)
+    FETCHPP_REENTER(coro_)
     {
-      if (req.method() == beast::http::verb::connect ||
-          req.method() == beast::http::verb::head)
-        parser->skip(true);
+      if (req_.method() == beast::http::verb::connect ||
+          req_.method() == beast::http::verb::head)
+        parser_->skip(true);
 
       FETCHPP_YIELD async_process_one(
-          stream, buffer, req, *parser, std::move(self));
-      res = std::move(parser->release());
+          stream_, buffer_, req_, *parser_, std::move(self));
+      res_ = std::move(parser_->release());
       self.complete(ec);
     }
   }
@@ -223,8 +232,7 @@ auto async_process_one(AsyncStream& stream,
                 "Buffer type requirements not met");
 
   return net::async_compose<CompletionToken, void(error_code)>(
-      process_one::detail::stream_op<AsyncStream, Request, Response, Buffer>{
-          stream, request, response, buffer},
+      process_one::detail::stream_op(stream, request, response, buffer),
       token,
       stream);
 }
