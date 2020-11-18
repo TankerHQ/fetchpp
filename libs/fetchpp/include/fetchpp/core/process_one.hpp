@@ -135,6 +135,7 @@ struct stream_op
       buffer_(buf),
       parser_(std::make_unique<parser_t>())
   {
+    parser_->body_limit(8388608); // 80MiB
   }
 
   template <typename Self>
