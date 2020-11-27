@@ -11,7 +11,7 @@ stages:
     FETCHPP_TEST_HOST: "httpbin.org"
     FETCHPP_TEST_PROXY: "tinyproxy:8888"
   services:
-    - name: vimagick/tinyproxy
+    - name: registry.gitlab.com/tankerhq/ci/tinyproxy:latest
       alias: tinyproxy
 
 .build:
