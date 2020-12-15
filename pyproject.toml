@@ -1,12 +1,12 @@
 [tool.poetry]
-name = "tanker-native-sdk"
+name = "fetchpp"
 version = "0.1.0"
-description = "C++ client for Tanker"
+description = "HTTP client library for C++"
 authors = ["Tanker team <tech@tanker.io>"]
 
 [tool.poetry.dependencies]
 python = "^3.7"
-tankerci = "*"
+tankerci = ">= 2020.12.3123"
 
 [[tool.poetry.source]]
 name = "gitlab"
