@@ -1,6 +1,8 @@
-before_script:
-  - poetry install
 image: registry.gitlab.com/tankerhq/ci/ci-native:latest
+
+before_script:
+  - poetry run python -m pip install --upgrade pip
+  - poetry install
 
 stages:
   - build
