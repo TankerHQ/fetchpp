@@ -1,4 +1,4 @@
-image: registry.gitlab.com/tankerhq/ci/ci-native:latest
+image: registry.gitlab.com/tankerhq/docker/native:latest
 
 before_script:
   - poetry run python -m pip install --upgrade pip
