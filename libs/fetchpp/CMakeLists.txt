@@ -46,7 +46,6 @@ add_library(fetchpp
   src/core/cache_mode.cpp
   src/core/endpoint.cpp
   src/core/session_work_queue.cpp
-  src/core/basic_transport.cpp
   src/core/client.cpp
   src/core/fetch.cpp
   src/http/detail/request.cpp
