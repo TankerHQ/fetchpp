@@ -20,8 +20,6 @@
 
 namespace fetchpp
 {
-bool is_brutally_closed(error_code ec);
-
 namespace detail
 {
 template <typename AsyncTransport>

@@ -62,7 +62,9 @@ struct process_queue_op
       FETCHPP_YIELD async_process_one(
           session_.transport_, request_, response_, std::move(self));
 
-      if (is_brutally_closed(ec))
+      // If an error occurred and this is a reused connection, silence the
+      // error and try again
+      if (ec)
       {
         last_ec_ = ec;
         FETCHPP_YIELD session_.transport_.async_close(std::move(self));
@@ -242,14 +244,14 @@ private:
 
 template <typename... Args>
 session(secure_endpoint, std::chrono::nanoseconds, Args&&...)
-    ->session<secure_endpoint, ssl_async_transport>;
+    -> session<secure_endpoint, ssl_async_transport>;
 
 template <typename... Args>
 session(plain_endpoint, std::chrono::nanoseconds, Args&&...)
-    ->session<plain_endpoint, tcp_async_transport>;
+    -> session<plain_endpoint, tcp_async_transport>;
 
 template <typename... Args>
 session(tunnel_endpoint, std::chrono::nanoseconds, Args&&...)
-    ->session<tunnel_endpoint, tunnel_async_transport>;
+    -> session<tunnel_endpoint, tunnel_async_transport>;
 
 }
