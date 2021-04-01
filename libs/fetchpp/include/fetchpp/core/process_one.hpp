@@ -177,7 +177,7 @@ struct transport_op
       res_(res),
       parser_(std::make_unique<parser_t>())
   {
-    parser_->body_limit(83'886'080); // 80MiB
+    parser_->body_limit(80 * 1024 * 1024);
     if (req_.method() == beast::http::verb::connect ||
         req_.method() == beast::http::verb::head)
       parser_->skip(true);
