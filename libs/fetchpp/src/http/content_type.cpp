@@ -74,13 +74,13 @@ bool operator!=(content_type const& lhs, content_type const& rhs)
   return !(lhs == rhs);
 }
 
-std::ostream& operator<<(std::ostream& os, content_type const& ct)
+std::string to_string(content_type const& ct)
 {
-  os << ct.type();
+  std::string str(ct.type());
   if (!ct.charset().empty())
-    os << "; charset=" << ct.charset();
+    str + "; charset=" + ct.charset();
   if (!ct.boundary().empty())
-    os << "; boundary=" << ct.boundary();
-  return os;
+    str + "; boundary=" + ct.boundary();
+  return str;
 }
 }

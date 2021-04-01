@@ -120,7 +120,7 @@ template <bool isRequest, typename DynamicBuffer>
 void message<isRequest, DynamicBuffer>::set(
     http::authorization::methods const& m)
 {
-  this->set(fetchpp::http::field::authorization, m);
+  this->set(fetchpp::http::field::authorization, to_string(m));
 }
 
 template <bool isRequest, typename DynamicBuffer>
@@ -141,7 +141,7 @@ message<isRequest, DynamicBuffer>::content_type() const
 template <bool isRequest, typename DynamicBuffer>
 void message<isRequest, DynamicBuffer>::set(http::content_type const& ctype)
 {
-  this->set(http::field::content_type, ctype);
+  this->set(http::field::content_type, to_string(ctype));
 }
 
 template <bool isRequest, typename DynamicBuffer>

@@ -17,8 +17,7 @@ public:
   bearer(std::string_view token);
   std::string const& token() const noexcept;
 };
-
-std::ostream& operator<<(std::ostream& os, bearer const& ct);
+std::string to_string(bearer const&);
 
 class basic
 {
@@ -32,9 +31,9 @@ public:
   std::string const& user() const noexcept;
   std::string const& password() const noexcept;
 };
-std::ostream& operator<<(std::ostream& os, basic const& ct);
+std::string to_string(basic const&);
 
 using methods = boost::variant2::variant<basic, bearer>;
 
-std::ostream& operator<<(std::ostream& os, methods const& m);
+std::string to_string(methods const&);
 }

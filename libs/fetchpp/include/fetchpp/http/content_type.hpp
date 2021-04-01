@@ -4,8 +4,6 @@
 #include <string>
 #include <string_view>
 
-#include <iosfwd>
-
 namespace fetchpp::http
 {
 class content_type : private std::array<std::string, 3>
@@ -38,5 +36,5 @@ public:
 bool operator==(content_type const& lhs, content_type const& rhs);
 bool operator!=(content_type const& lhs, content_type const& rhs);
 
-std::ostream& operator<<(std::ostream& os, content_type const& ct);
+std::string to_string(content_type const& ct);
 }

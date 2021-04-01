@@ -4,8 +4,6 @@
 
 #include <fetchpp/alias/beast.hpp>
 
-#include <ostream>
-
 namespace fetchpp::http::authorization
 {
 bearer::bearer(std::string_view token) : token_(token)
@@ -17,10 +15,9 @@ std::string const& bearer::token() const noexcept
   return token_;
 }
 
-std::ostream& operator<<(std::ostream& os, bearer const& bearer)
+std::string to_string(bearer const& bearer)
 {
-  os << "Bearer " << bearer.token();
-  return os;
+  return std::string("Bearer ") + bearer.token();
 }
 
 basic::basic(std::string_view user, std::string_view password)
@@ -38,20 +35,18 @@ std::string const& basic::password() const noexcept
   return password_;
 }
 
-std::ostream& operator<<(std::ostream& os, basic const& b)
+std::string to_string(basic const& b)
 {
   using namespace beast::detail::base64;
   auto const source = b.user() + ':' + b.password();
   auto out = std::string(encoded_size(source.length()), '\0');
   out.resize(encode(out.data(), source.data(), source.length()));
-  os << "Basic " << out;
-  return os;
+  return std::string("Basic ") + out;
 }
 
-std::ostream& operator<<(std::ostream& os, methods const& m)
+std::string to_string(methods const& m)
 {
-  boost::variant2::visit([&os](auto&& m) { os << m; }, m);
-  return os;
+  return boost::variant2::visit([](auto&& m) { return to_string(m); }, m);
 }
 
 }
