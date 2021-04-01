@@ -37,9 +37,7 @@ public:
 
   std::string describe() const override
   {
-    std::ostringstream ss;
-    ss << "equals to: " << ref_ct;
-    return ss.str();
+    return std::string("equals to: ") + to_string(ref_ct);
   }
 };
 

@@ -53,7 +53,7 @@ void basic_request<DynamicBuffer>::accept(std::string_view ct)
 template <typename DynamicBuffer>
 void basic_request<DynamicBuffer>::accept(http::content_type const& ct)
 {
-  this->set(http::field::accept, ct);
+  this->set(http::field::accept, to_string(ct));
 }
 
 using request = basic_request<beast::multi_buffer>;

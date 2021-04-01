@@ -17,9 +17,14 @@ std::string const& bearer::token() const noexcept
   return token_;
 }
 
+std::string to_string(bearer const& bearer)
+{
+  return std::string("Bearer ") + bearer.token();
+}
+
 std::ostream& operator<<(std::ostream& os, bearer const& bearer)
 {
-  os << "Bearer " << bearer.token();
+  os << to_string(bearer);
   return os;
 }
 
@@ -38,13 +43,18 @@ std::string const& basic::password() const noexcept
   return password_;
 }
 
-std::ostream& operator<<(std::ostream& os, basic const& b)
+std::string to_string(basic const& b)
 {
   using namespace beast::detail::base64;
   auto const source = b.user() + ':' + b.password();
   auto out = std::string(encoded_size(source.length()), '\0');
   out.resize(encode(out.data(), source.data(), source.length()));
-  os << "Basic " << out;
+  return std::string("Basic ") + out;
+}
+
+std::ostream& operator<<(std::ostream& os, basic const& b)
+{
+  os << to_string(b);
   return os;
 }
 
@@ -52,6 +62,11 @@ std::ostream& operator<<(std::ostream& os, methods const& m)
 {
   boost::variant2::visit([&os](auto&& m) { os << m; }, m);
   return os;
+}
+
+std::string to_string(methods const& m)
+{
+  return boost::variant2::visit([](auto&& m) { return to_string(m); }, m);
 }
 
 }

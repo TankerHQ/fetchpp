@@ -83,4 +83,14 @@ std::ostream& operator<<(std::ostream& os, content_type const& ct)
     os << "; boundary=" << ct.boundary();
   return os;
 }
+
+std::string to_string(content_type const& ct)
+{
+  std::string str(ct.type());
+  if (!ct.charset().empty())
+    str + "; charset=" + ct.charset();
+  if (!ct.boundary().empty())
+    str + "; boundary=" + ct.boundary();
+  return str;
+}
 }

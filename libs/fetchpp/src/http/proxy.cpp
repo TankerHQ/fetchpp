@@ -67,8 +67,9 @@ proxy proxy::parse(std::string_view sv)
     throw std::runtime_error("invalid proxy url");
   http::fields fields;
   if (!record.username.empty() && !record.password.empty())
-    fields.set(field::proxy_authorization,
-               authorization::basic(record.username, record.password));
+    fields.set(
+        field::proxy_authorization,
+        to_string(authorization::basic(record.username, record.password)));
   return proxy{http::url(std::move(record)), std::move(fields)};
 }
 
