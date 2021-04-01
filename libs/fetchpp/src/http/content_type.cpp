@@ -74,16 +74,6 @@ bool operator!=(content_type const& lhs, content_type const& rhs)
   return !(lhs == rhs);
 }
 
-std::ostream& operator<<(std::ostream& os, content_type const& ct)
-{
-  os << ct.type();
-  if (!ct.charset().empty())
-    os << "; charset=" << ct.charset();
-  if (!ct.boundary().empty())
-    os << "; boundary=" << ct.boundary();
-  return os;
-}
-
 std::string to_string(content_type const& ct)
 {
   std::string str(ct.type());

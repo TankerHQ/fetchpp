@@ -7,8 +7,6 @@
 
 #include <nlohmann/json.hpp>
 
-#include <sstream>
-
 #include <catch2/catch.hpp>
 
 using namespace fetchpp::http::url_literals;
