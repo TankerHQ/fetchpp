@@ -174,10 +174,10 @@ public:
   }
 
   template <typename CompletionToken>
-  auto async_close(GracefulShutdown beGracefull, CompletionToken&& token)
+  auto async_close(GracefulShutdown beGraceful, CompletionToken&& token)
   {
     return net::async_compose<CompletionToken, void(error_code)>(
-        [this, beGracefull, coro_ = net::coroutine{}](
+        [this, beGraceful, coro_ = net::coroutine{}](
             auto& self, error_code ec = {}) mutable {
           FETCHPP_REENTER(coro_)
           {
@@ -186,7 +186,7 @@ public:
             if (this->is_open())
             {
               detail::do_cancel(*stream_);
-              if (beGracefull == GracefulShutdown::Yes)
+              if (beGraceful == GracefulShutdown::Yes)
               {
                 FETCHPP_YIELD detail::do_async_close(*this, std::move(self));
               }

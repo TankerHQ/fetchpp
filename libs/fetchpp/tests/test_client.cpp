@@ -13,6 +13,7 @@
 
 #include <chrono>
 #include <fmt/ostream.h>
+#include <iostream>
 #include <thread>
 
 using namespace std::chrono_literals;
@@ -26,8 +27,19 @@ using test::helpers::HasErrorCode;
 namespace ssl = fetchpp::net::ssl;
 using URL = fetchpp::http::url;
 
+namespace fetchpp
+{
+static std::ostream& operator<<(std::ostream& os, GracefulShutdown const& g)
+{
+  os << ((g == fetchpp::GracefulShutdown::Yes) ? "Yes" : "No");
+  return os;
+}
+}
+
 TEST_CASE_METHOD(ioc_fixture, "client push one request", "[client][http]")
 {
+  auto b = fetchpp::GracefulShutdown::Yes;
+  std::cout << b << std::endl;
   fetchpp::client cl{ioc};
   auto const url = fetchpp::http::url("get"_https);
   auto request = fetchpp::http::request(fetchpp::http::verb::get, url);
@@ -74,97 +86,72 @@ TEST_CASE_METHOD(ioc_fixture, "client with delay", "[client][http][delay]")
 }
 
 TEST_CASE_METHOD(ioc_fixture,
-                 "https client stops while requesting",
+                 "client stops while requesting",
                  "[client][https][delay][.stop]")
 {
   using fetchpp::http::url;
+  auto const dstUrl =
+      GENERATE(std::make_tuple(URL("get"_http), URL("delay/1"_http)),
+               std::make_tuple(URL("get"_https), URL("delay/1"_http)));
+  DYNAMIC_SECTION("requesting through " << std::get<0>(dstUrl).scheme())
+  {
+    auto const url = std::get<0>(dstUrl);
+    auto const delayUrl = std::get<1>(dstUrl);
+    fetchpp::client cl{ioc, 5s};
+    auto getrequest = fetchpp::http::request(fetchpp::http::verb::get, url);
+    auto delayrequest =
+        fetchpp::http::request(fetchpp::http::verb::get, delayUrl);
+    // wait for the connection to established
+    std::vector<std::future<fetchpp::http::response>> futures;
+    for (int i = 0; i < 10; ++i)
+      futures.push_back(cl.async_fetch(getrequest, boost::asio::use_future));
 
-  fetchpp::client cl{ioc, 5s};
-  auto getrequest =
-      fetchpp::http::request(fetchpp::http::verb::get, url("get"_https));
-  auto delayrequest =
-      fetchpp::http::request(fetchpp::http::verb::get, url("delay/1"_https));
-  // wait for the connection to established
-  std::vector<std::future<fetchpp::http::response>> futures;
-  for (int i = 0; i < 10; ++i)
-    futures.push_back(cl.async_fetch(getrequest, boost::asio::use_future));
+    for (auto& future : futures)
+      REQUIRE_NOTHROW(future.get());
 
-  for (auto& future : futures)
-    REQUIRE_NOTHROW(future.get());
+    futures.clear();
+    for (int i = 0; i < 10; ++i)
+      futures.push_back(cl.async_fetch(delayrequest, boost::asio::use_future));
 
-  futures.clear();
-  for (int i = 0; i < 10; ++i)
-    futures.push_back(cl.async_fetch(delayrequest, boost::asio::use_future));
-
-  std::future<void> closeFut;
-  REQUIRE_NOTHROW(closeFut = cl.async_stop(boost::asio::use_future));
-
-  for (auto& future : futures)
-    future.wait();
-  closeFut.get();
+    std::future<void> closeFut;
+    auto begraceful =
+        GENERATE(fetchpp::GracefulShutdown::Yes, fetchpp::GracefulShutdown::No);
+    DYNAMIC_SECTION("stopping gracefully: " << begraceful)
+    {
+      REQUIRE_NOTHROW(closeFut =
+                          cl.async_stop(begraceful, boost::asio::use_future));
+    }
+    for (auto& future : futures)
+      future.wait();
+    closeFut.get();
+  }
 }
 
 TEST_CASE_METHOD(ioc_fixture,
-                 "http client stops while requesting",
-                 "[client][http][delay][.stop]")
-{
-  using fetchpp::http::url;
-
-  fetchpp::client cl{ioc, 5s};
-  auto getrequest =
-      fetchpp::http::request(fetchpp::http::verb::get, url("get"_http));
-  auto delayrequest =
-      fetchpp::http::request(fetchpp::http::verb::get, url("delay/1"_http));
-  // wait for the connection to established
-  std::vector<std::future<fetchpp::http::response>> futures;
-  for (int i = 0; i < 10; ++i)
-    futures.push_back(cl.async_fetch(getrequest, boost::asio::use_future));
-
-  for (auto& future : futures)
-    REQUIRE_NOTHROW(future.get());
-
-  futures.clear();
-  for (int i = 0; i < 10; ++i)
-    futures.push_back(cl.async_fetch(delayrequest, boost::asio::use_future));
-
-  REQUIRE_NOTHROW(cl.async_stop(boost::asio::use_future));
-
-  for (auto& future : futures)
-    future.wait();
-}
-
-TEST_CASE_METHOD(ioc_fixture,
-                 "https client stops while connecting",
+                 "client stops while connecting",
                  "[client][https][delay][.stop]")
 {
-  fetchpp::client cl{ioc, 2s};
-  auto const delay = fetchpp::http::url("delay/1"_https);
-  auto delayrequest = fetchpp::http::request(fetchpp::http::verb::get, delay);
+  auto const dst = URL(GENERATE("delay/1"_http, "delay/1"_https));
+  DYNAMIC_SECTION("requesting through " << dst.scheme())
+  {
+    fetchpp::client cl{ioc, 2s};
+    auto const delay = fetchpp::http::url("delay/1"_https);
+    auto delayrequest = fetchpp::http::request(fetchpp::http::verb::get, delay);
 
-  std::vector<std::future<fetchpp::http::response>> futures;
-  for (int i = 1; i < 5; ++i)
-    futures.push_back(cl.async_fetch(delayrequest, boost::asio::use_future));
+    std::vector<std::future<fetchpp::http::response>> futures;
+    for (int i = 1; i < 5; ++i)
+      futures.push_back(cl.async_fetch(delayrequest, boost::asio::use_future));
 
-  REQUIRE_NOTHROW(cl.async_stop(boost::asio::use_future).get());
+    auto begraceful =
+        GENERATE(fetchpp::GracefulShutdown::Yes, fetchpp::GracefulShutdown::No);
+    DYNAMIC_SECTION("stopping gracefully: " << begraceful)
+    {
+      REQUIRE_NOTHROW(cl.async_stop(boost::asio::use_future).get());
+    }
 
-  for (auto& future : futures)
-    future.wait();
-}
-
-TEST_CASE_METHOD(ioc_fixture,
-                 "http client stops while connecting",
-                 "[client][http][delay][.stop]")
-{
-  fetchpp::client cl{ioc, 2s};
-  auto const delay = fetchpp::http::url("delay/1"_http);
-  auto delayrequest = fetchpp::http::request(fetchpp::http::verb::get, delay);
-  std::vector<std::future<fetchpp::http::response>> futures;
-  for (int i = 1; i < 5; ++i)
-    futures.push_back(cl.async_fetch(delayrequest, boost::asio::use_future));
-
-  REQUIRE_NOTHROW(cl.async_stop(boost::asio::use_future));
-  for (auto& future : futures)
-    future.wait();
+    for (auto& future : futures)
+      future.wait();
+  }
 }
 
 TEST_CASE_METHOD(ioc_fixture,
@@ -180,4 +167,10 @@ TEST_CASE_METHOD(ioc_fixture,
 
   auto res = cl.async_fetch(std::move(request), boost::asio::use_future).get();
   REQUIRE(res.result_int() == 200);
+  auto begraceful =
+      GENERATE(fetchpp::GracefulShutdown::Yes, fetchpp::GracefulShutdown::No);
+  DYNAMIC_SECTION("stopping gracefully: " << begraceful)
+  {
+    REQUIRE_NOTHROW(cl.async_stop(boost::asio::use_future).get());
+  }
 }

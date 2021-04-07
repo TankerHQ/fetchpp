@@ -51,20 +51,27 @@ public:
   http::proxy_map const& proxies() const;
 
   template <typename CompletionToken>
-  auto async_stop(CompletionToken&& token)
+  auto async_stop(GracefulShutdown graceful, CompletionToken&& token)
   {
     return net::async_compose<CompletionToken, void(error_code)>(
-        [this, coro_ = net::coroutine{}](auto& self,
-                                         error_code ec = {}) mutable {
+        [this, graceful, coro_ = net::coroutine{}](auto& self,
+                                                   error_code ec = {}) mutable {
           FETCHPP_REENTER(coro_)
           {
-            FETCHPP_YIELD detail::async_stop_session_pool(this->sessions_,
-                                                          std::move(self));
+            FETCHPP_YIELD detail::async_stop_session_pool(
+                graceful, this->sessions_, std::move(self));
             self.complete(ec);
           }
         },
         token,
         strand_);
+  }
+
+  template <typename CompletionToken>
+  auto async_stop(CompletionToken&& token)
+  {
+    return async_stop(GracefulShutdown::Yes,
+                      std::forward<CompletionToken>(token));
   }
 
   template <

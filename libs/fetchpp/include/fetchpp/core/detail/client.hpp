@@ -100,11 +100,12 @@ struct client_fetch_op
 };
 template <typename Client, typename Request, typename CompletionHandler>
 client_fetch_op(Client&, Request, CompletionHandler)
-    ->client_fetch_op<Client, Request, CompletionHandler>;
+    -> client_fetch_op<Client, Request, CompletionHandler>;
 
 template <typename Session>
 struct client_stop_sessions_op
 {
+  GracefulShutdown graceful_;
   std::deque<Session>& sessions_;
   typename std::deque<Session>::iterator begin_ = {};
   typename std::deque<Session>::iterator end_ = {};
@@ -120,7 +121,10 @@ struct client_stop_sessions_op
       while (begin_ != end_)
       {
         FETCHPP_YIELD boost::variant2::visit(
-            [&](auto& v) { return v.async_stop(std::move(self)); }, *begin_);
+            [&](auto& session) {
+              return session.async_stop(graceful_, std::move(self));
+            },
+            *begin_);
         ++begin_;
       }
       self.complete(ec);
@@ -128,12 +132,15 @@ struct client_stop_sessions_op
   }
 };
 template <typename Session>
-client_stop_sessions_op(std::deque<Session>&)->client_stop_sessions_op<Session>;
+client_stop_sessions_op(GracefulShutdown, std::deque<Session>&)
+    -> client_stop_sessions_op<Session>;
 
 template <typename SessionPool, typename CompletionToken>
-auto async_stop_session_pool(SessionPool& sessions, CompletionToken&& token)
+auto async_stop_session_pool(GracefulShutdown graceful,
+                             SessionPool& sessions,
+                             CompletionToken&& token)
 {
   return net::async_compose<CompletionToken, void(error_code)>(
-      client_stop_sessions_op{sessions}, token);
+      client_stop_sessions_op{graceful, sessions}, token);
 }
 }

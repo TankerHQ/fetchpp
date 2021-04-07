@@ -194,20 +194,27 @@ public:
   }
 
   template <typename CompletionToken>
-  auto async_stop(CompletionToken&& token)
+  auto async_stop(GracefulShutdown graceful, CompletionToken&& token)
   {
     return net::async_compose<CompletionToken, void(error_code)>(
-        [this, coro_ = net::coroutine{}](auto& self,
-                                         error_code ec = {}) mutable {
+        [this, graceful, coro_ = net::coroutine{}](auto& self,
+                                                   error_code ec = {}) mutable {
           FETCHPP_REENTER(coro_)
           {
             is_running_ = false;
-            FETCHPP_YIELD transport_.async_close(std::move(self));
+            FETCHPP_YIELD transport_.async_close(graceful, std::move(self));
             self.complete(ec);
           }
         },
         token,
         *this);
+  }
+
+  template <typename CompletionToken>
+  auto async_stop(CompletionToken&& token)
+  {
+    return async_stop(GracefulShutdown::Yes,
+                      std::forward<CompletionToken>(token));
   }
 
   template <typename CompletionToken>
