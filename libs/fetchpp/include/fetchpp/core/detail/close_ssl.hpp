@@ -13,9 +13,7 @@
 #include <fetchpp/alias/error_code.hpp>
 #include <fetchpp/alias/tcp.hpp>
 
-namespace fetchpp
-{
-namespace detail
+namespace fetchpp::detail
 {
 template <typename AsyncSSLStream>
 struct async_ssl_close_op
@@ -56,7 +54,6 @@ struct async_ssl_close_op
 };
 template <typename NextLayer>
 async_ssl_close_op(beast::ssl_stream<NextLayer>&)
-    ->async_ssl_close_op<beast::ssl_stream<NextLayer>>;
-}
+    -> async_ssl_close_op<beast::ssl_stream<NextLayer>>;
 
 }
