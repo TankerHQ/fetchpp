@@ -60,11 +60,6 @@ struct async_tcp_close_op
   {
     FETCHPP_REENTER(coro_)
     {
-      beast::get_lowest_layer(stream_).socket().cancel(ec);
-      assert(!ec);
-      // ignore the error
-      ec = {};
-      // give a chance to canceled handler to finish
       FETCHPP_YIELD net::post(beast::bind_front_handler(std::move(self)));
       beast::close_socket(beast::get_lowest_layer(stream_));
       self.complete(ec);

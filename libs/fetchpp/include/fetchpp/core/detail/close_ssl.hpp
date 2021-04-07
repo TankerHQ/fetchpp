@@ -28,10 +28,6 @@ struct async_ssl_close_op
   {
     FETCHPP_REENTER(coro_)
     {
-      beast::get_lowest_layer(stream_).socket().cancel(ec);
-      // ignore the error
-      assert(!ec);
-      ec = {};
       FETCHPP_YIELD net::post(beast::bind_front_handler(std::move(self)));
       FETCHPP_YIELD stream_.async_shutdown(std::move(self));
       if (ec == net::error::eof)
