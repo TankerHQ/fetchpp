@@ -39,7 +39,7 @@ struct process_queue_op
   template <typename Self>
   void operator()(Self& self, error_code ec = {})
   {
-    if (!session_.is_running_ || ec == net::error::operation_aborted)
+    if (!session_.running() || ec == net::error::operation_aborted)
     {
       session_.work_queue_.cancel_all();
       self.complete(net::error::operation_aborted);
@@ -48,7 +48,7 @@ struct process_queue_op
 
     FETCHPP_REENTER(coro_)
     {
-      if (!session_.transport_.is_open() && session_.is_running_)
+      if (!session_.transport_.is_open() && session_.running())
       {
         FETCHPP_YIELD session_.async_transport_connect(std::move(self));
         if (ec)
@@ -69,19 +69,19 @@ struct process_queue_op
         last_ec_ = ec;
         FETCHPP_YIELD session_.transport_.async_close(std::move(self));
         ec = last_ec_;
-        if (!session_.first_round_)
+        if (!session_.first_round())
         {
           // we reset the coroutine state to try a re-connection
           coro_ = {};
-          session_.first_round_ = true;
+          session_.set_first_round(true);
           net::post(beast::bind_front_handler(std::move(self), error_code{}));
           return;
         }
       }
       else
-        session_.first_round_ = false;
+        session_.set_first_round(false);
 
-      if (session_.is_running_)
+      if (session_.running())
         session_.work_queue_.consume();
       else
         session_.work_queue_.cancel_all();
@@ -201,7 +201,7 @@ public:
                                                    error_code ec = {}) mutable {
           FETCHPP_REENTER(coro_)
           {
-            is_running_ = false;
+            set_running(false);
             FETCHPP_YIELD transport_.async_close(graceful, std::move(self));
             self.complete(ec);
           }
@@ -225,7 +225,7 @@ public:
                                          error_code ec = {}) mutable {
           FETCHPP_REENTER(coro_)
           {
-            is_running_ = true;
+            set_running(true);
             FETCHPP_YIELD this->async_transport_connect(std::move(self));
             self.complete(ec);
           }
@@ -234,12 +234,32 @@ public:
         *this);
   }
 
+  bool running() const
+  {
+    return is_running_;
+  }
+
+  bool first_round() const
+  {
+    return first_round_;
+  }
+
 private:
   template <typename CompletionToken>
   auto async_transport_connect(CompletionToken&& token)
   {
     return transport_.async_connect(endpoint_,
                                     std::forward<CompletionToken>(token));
+  }
+
+  void set_running(bool new_state)
+  {
+    is_running_ = new_state;
+  }
+
+  void set_first_round(bool new_state)
+  {
+    first_round_ = new_state;
   }
 
   endpoint_type endpoint_;
