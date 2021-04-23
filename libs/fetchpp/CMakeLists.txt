@@ -9,6 +9,9 @@ add_library(fetchpp
   include/fetchpp/post.hpp
   include/fetchpp/version.hpp
 
+  include/fetchpp/net/make_dispatch.hpp
+  include/fetchpp/net/make_post.hpp
+
   include/fetchpp/core/detail/async_http_result.hpp
   include/fetchpp/core/detail/coroutine.hpp
   include/fetchpp/core/detail/fetch.hpp
@@ -16,6 +19,7 @@ add_library(fetchpp
   include/fetchpp/core/detail/http_stable_async.hpp
   include/fetchpp/core/detail/session_work_queue.hpp
   include/fetchpp/core/detail/overloaded.hpp
+
   include/fetchpp/core/cache_mode.hpp
   include/fetchpp/core/field_arg.hpp
   include/fetchpp/core/endpoint.hpp
