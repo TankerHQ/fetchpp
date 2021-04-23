@@ -198,12 +198,29 @@ TEST_CASE_METHOD(ioc_fixture,
                EqualsHeader(headers, "X-Random-Header"));
 }
 
+TEST_CASE_METHOD(ioc_fixture, "http async fetch with header", "[http][get]")
+{
+  auto request = fetchpp::http::request(fetchpp::http::verb::get,
+                                        fetchpp::http::url("get"_http));
+  request.set("X-Random-Header", "this is a cute value");
+  auto response =
+      fetchpp::async_fetch(ex, std::move(request), boost::asio::use_future)
+          .get();
+  REQUIRE(response.result_int() == 200);
+  REQUIRE(response.is_json());
+  auto const json = response.json();
+  REQUIRE_THAT("this is a cute value",
+               EqualsHeader(json.at("headers"), "X-Random-Header"));
+}
+
 TEST_CASE_METHOD(ioc_fixture, "http async get", "[https][get]")
 {
+  auto const url = GENERATE("get"_http, "get"_https);
+  INFO("requesting " << url);
   auto response =
       fetchpp::async_get(
           ex,
-          "get"_https,
+          url,
           fetchpp::http::headers{{"X-random-header", "this is a cute value"}},
           boost::asio::use_future)
           .get();
