@@ -28,7 +28,6 @@ struct async_ssl_close_op
   {
     FETCHPP_REENTER(coro_)
     {
-      FETCHPP_YIELD net::post(beast::bind_front_handler(std::move(self)));
       FETCHPP_YIELD stream_.async_shutdown(std::move(self));
       if (ec == net::error::eof)
         // http://stackoverflow.com/questions/25587403/boost-asio-ssl-async-shutdown-always-finishes-with-an-error

@@ -95,14 +95,14 @@ public:
       if constexpr (Session::endpoint_type::is_secure::value)
         return sessions_.emplace_back(boost::variant2::in_place_type<Session>,
                                       std::move(endpoint),
-                                      this->timeout_,
                                       this->strand_,
+                                      this->timeout_,
                                       this->context_);
       else
         return sessions_.emplace_back(boost::variant2::in_place_type<Session>,
                                       std::move(endpoint),
-                                      this->timeout_,
-                                      this->strand_);
+                                      this->strand_,
+                                      this->timeout_);
     }
     return *found;
   }

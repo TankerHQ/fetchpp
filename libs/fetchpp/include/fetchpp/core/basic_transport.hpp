@@ -89,12 +89,14 @@ public:
   template <typename... Args>
   basic_async_transport(DynamicBuffer buffer,
                         std::chrono::nanoseconds timeout,
+                        net::executor ex,
                         Args&&... args)
-    : stream_creator_([params = std::tuple<Args...>(
+    : stream_creator_([ex,
+                       params = std::tuple<Args...>(
                            std::forward<Args>(args)...)]() mutable {
         return std::apply(
-            [](auto&&... args) {
-              return next_layer_type(std::forward<decltype(args)>(args)...);
+            [ex](auto&&... args) {
+              return next_layer_type(ex, std::forward<decltype(args)>(args)...);
             },
             std::move(params));
       }),
@@ -106,8 +108,11 @@ public:
   }
 
   template <typename... Args>
-  basic_async_transport(std::chrono::nanoseconds timeout, Args&&... args)
-    : basic_async_transport(buffer_type{}, timeout, std::forward<Args>(args)...)
+  basic_async_transport(net::executor ex,
+                        std::chrono::nanoseconds timeout,
+                        Args&&... args)
+    : basic_async_transport(
+          buffer_type{}, timeout, ex, std::forward<Args>(args)...)
   {
   }
 

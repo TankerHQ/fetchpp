@@ -270,15 +270,15 @@ private:
 };
 
 template <typename... Args>
-session(secure_endpoint, std::chrono::nanoseconds, Args&&...)
+session(secure_endpoint, net::executor, std::chrono::nanoseconds, Args&&...)
     -> session<secure_endpoint, ssl_async_transport>;
 
 template <typename... Args>
-session(plain_endpoint, std::chrono::nanoseconds, Args&&...)
+session(plain_endpoint, net::executor, std::chrono::nanoseconds, Args&&...)
     -> session<plain_endpoint, tcp_async_transport>;
 
 template <typename... Args>
-session(tunnel_endpoint, std::chrono::nanoseconds, Args&&...)
+session(tunnel_endpoint, net::executor, std::chrono::nanoseconds, Args&&...)
     -> session<tunnel_endpoint, tunnel_async_transport>;
 
 }

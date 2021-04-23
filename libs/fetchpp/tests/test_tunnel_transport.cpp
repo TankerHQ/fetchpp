@@ -28,7 +28,7 @@ using test::helpers::HasErrorCode;
 TEST_CASE_METHOD(ioc_fixture, "connect timeouts", "[tunnel][http][timeout]")
 {
   ssl::context ctx(ssl::context::tlsv12_client);
-  fetchpp::tunnel_async_transport ts(500ms, ex, ctx);
+  fetchpp::tunnel_async_transport ts(ex, 500ms, ctx);
   // this is a non routable ip
   auto proxy = fetchpp::plain_endpoint("10.255.255.1", 8080);
   auto const now = std::chrono::high_resolution_clock::now();
@@ -53,7 +53,7 @@ TEST_CASE_METHOD(ioc_fixture, "transport one ssl", "[tunnel][https]")
       fetchpp::tunnel_endpoint{fetchpp::detail::to_endpoint<false>(proxy_url),
                                fetchpp::detail::to_endpoint<true>(url)};
 
-  fetchpp::tunnel_async_transport ts(5s, ex, ctx);
+  fetchpp::tunnel_async_transport ts(ex, 5s, ctx);
   REQUIRE_NOTHROW(ts.async_connect(tunnel, boost::asio::use_future).get());
   auto const request = fetchpp::http::request(fetchpp::http::verb::get, url);
   fetchpp::http::response response;
@@ -74,7 +74,7 @@ TEST_CASE_METHOD(ioc_fixture,
   auto const tunnel =
       fetchpp::tunnel_endpoint{fetchpp::detail::to_endpoint<false>(proxy_url),
                                fetchpp::detail::to_endpoint<true>(url)};
-  fetchpp::tunnel_async_transport ts(1s, ex, ctx);
+  fetchpp::tunnel_async_transport ts(ex, 1s, ctx);
   REQUIRE_NOTHROW(ts.async_connect(tunnel, boost::asio::use_future).get());
   auto const request = fetchpp::http::request(fetchpp::http::verb::get, url);
   fetchpp::http::response response;
@@ -99,7 +99,7 @@ TEST_CASE_METHOD(ioc_fixture,
       fetchpp::tunnel_endpoint{fetchpp::detail::to_endpoint<false>(proxy_url),
                                fetchpp::detail::to_endpoint<true>(url)};
 
-  fetchpp::tunnel_async_transport ts(5s, ex, ctx);
+  fetchpp::tunnel_async_transport ts(ex, 5s, ctx);
   REQUIRE_NOTHROW(ts.async_connect(tunnel, boost::asio::use_future).get());
   auto const request = fetchpp::http::request(fetchpp::http::verb::get, url);
   fetchpp::http::response response;
