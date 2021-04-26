@@ -35,9 +35,14 @@ void client::set_verify_peer(bool v)
                                      net::ssl::verify_none);
 }
 
-auto client::get_executor() const -> executor_type
+auto client::get_internal_executor() const -> internal_executor_type
 {
   return strand_;
+}
+
+auto client::get_default_executor() const -> default_executor_type
+{
+  return get_internal_executor().get_inner_executor();
 }
 
 std::size_t client::max_pending_per_session() const
