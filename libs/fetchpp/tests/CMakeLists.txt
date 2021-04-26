@@ -65,5 +65,5 @@ else()
 endif()
 
 add_test(NAME test_session COMMAND test_session ${FETCHPP_TEST_FILTER})
-add_test(NAME test_client COMMAND test_client ~[stop]${FETCHPP_TEST_FILTER})
+add_test(NAME test_client COMMAND test_client ${FETCHPP_TEST_FILTER})
 add_test(NAME test_functional COMMAND test_functional)
