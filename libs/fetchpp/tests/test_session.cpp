@@ -1,5 +1,3 @@
-#include <fmt/format.h>
-
 #include <fetchpp/core/session.hpp>
 
 #include <fetchpp/core/ssl_transport.hpp>
@@ -8,10 +6,12 @@
 
 #include <fetchpp/core/detail/endpoint.hpp>
 
+#include "helpers/fake_server.hpp"
 #include "helpers/format.hpp"
 #include "helpers/ioc_fixture.hpp"
 #include "helpers/match_exception.hpp"
 #include "helpers/test_domain.hpp"
+#include "helpers/worker_fixture.hpp"
 
 #include <boost/asio/ssl/context.hpp>
 #include <boost/asio/ssl/error.hpp>
@@ -20,23 +20,347 @@
 
 #include <fetchpp/alias/net.hpp>
 
-#include <fmt/ostream.h>
-
 #include <array>
+#include <deque>
 #include <string>
 
 #include <catch2/catch.hpp>
+#include <fmt/format.h>
 
 using namespace test::helpers::http_literals;
 using namespace std::chrono_literals;
 
 using test::helpers::HasErrorCode;
 using test::helpers::ioc_fixture;
+using test::helpers::worker_fixture;
+
+namespace ssl = fetchpp::net::ssl;
+namespace net = boost::asio;
+namespace bb = boost::beast;
 
 using AsyncStream = fetchpp::beast::ssl_stream<fetchpp::beast::tcp_stream>;
-namespace ssl = fetchpp::net::ssl;
 using boost::asio::use_future;
 using URL = fetchpp::http::url;
+
+namespace
+{
+auto tcp_endpoint_to_url(net::ip::tcp::endpoint const& endpoint,
+                         std::string_view path = "",
+                         std::string_view protocol = "http")
+{
+  return fmt::format("{}://{}:{}{}",
+                     protocol,
+                     endpoint.address().to_string(),
+                     endpoint.port(),
+                     path);
+}
+}
+namespace fetchpp
+{
+static std::ostream& operator<<(std::ostream& os, GracefulShutdown const& g)
+{
+  os << ((g == fetchpp::GracefulShutdown::Yes) ? "Yes" : "No");
+  return os;
+}
+}
+
+TEST_CASE_METHOD(worker_fixture,
+                 "session executes multiples request",
+                 "[session][push][fake]")
+{
+  test::helpers::fake_server server(worker(1).ex);
+  auto dest = tcp_endpoint_to_url(server.local_endpoint(), "/get", "http");
+  auto session = fetchpp::session(
+      fetchpp::detail::to_endpoint<false>(URL(dest)), worker().ex, 30s);
+
+  auto request = fetchpp::http::request(fetchpp::http::verb::get,
+                                        fetchpp::http::url("get"_http));
+  std::vector<std::tuple<std::future<void>, fetchpp::http::response>> results{
+      10};
+  for (auto& [fut, response] : results)
+    fut = session.push_request(request, response, boost::asio::use_future);
+  for (auto& [fut, response] : results)
+  {
+    auto fake_session = server.async_accept(fetchpp::net::use_future).get();
+    REQUIRE_NOTHROW(
+        fake_session.async_reply_back(bb::http::status::ok, net::use_future)
+            .get());
+    REQUIRE_NOTHROW(fut.get());
+    REQUIRE(response.result_int() == 200);
+  }
+}
+
+TEST_CASE_METHOD(worker_fixture,
+                 "completion is executed on the correct executor",
+                 "[session][push][fake]")
+{
+  test::helpers::fake_server server(worker(1).ex);
+  auto dest = tcp_endpoint_to_url(server.local_endpoint(), "/get", "http");
+  auto session = fetchpp::session(
+      fetchpp::detail::to_endpoint<false>(URL(dest)), worker(2).ex, 30s);
+  auto request = fetchpp::http::request(fetchpp::http::verb::get,
+                                        fetchpp::http::url("get"_http));
+  {
+    auto resp = fetchpp::http::response{};
+    session.push_request(
+        request,
+        resp,
+        [session_worker_id = worker(2).worker.get_id()](auto ec) {
+          REQUIRE(!ec);
+          REQUIRE(session_worker_id == std::this_thread::get_id());
+        });
+    auto fake_session = server.async_accept(net::use_future).get();
+    REQUIRE_NOTHROW(
+        fake_session.async_reply_back(bb::http::status::ok, net::use_future)
+            .get());
+  }
+  {
+    auto resp = fetchpp::http::response{};
+    std::promise<void> isdone;
+    auto waitforit = isdone.get_future();
+    auto bound_worker_id = worker(0).worker.get_id();
+    session.push_request(
+        request,
+        resp,
+        net::bind_executor(worker(0).ex, [&](fetchpp::error_code ec) {
+          REQUIRE(!ec);
+          REQUIRE(bound_worker_id == std::this_thread::get_id());
+          isdone.set_value();
+        }));
+    auto fake_session = server.async_accept(net::use_future).get();
+    REQUIRE_NOTHROW(
+        fake_session.async_reply_back(bb::http::status::ok, net::use_future)
+            .get());
+    REQUIRE_NOTHROW(waitforit.get());
+    REQUIRE_NOTHROW(session.async_stop(net::use_future).get());
+  }
+}
+
+TEST_CASE_METHOD(worker_fixture,
+                 "session is running while pushing multiple requests",
+                 "[session][push][fake]")
+{
+  test::helpers::fake_server server(worker(1).ex);
+  auto dest = tcp_endpoint_to_url(server.local_endpoint(), "/get", "http");
+  auto session = fetchpp::session(
+      fetchpp::detail::to_endpoint<false>(URL(dest)), worker(2).ex, 30s);
+  auto fut = session.async_start(net::use_future);
+  auto fake_session = server.async_accept(net::use_future).get();
+  REQUIRE_NOTHROW(fut.get());
+  auto request = fetchpp::http::request(fetchpp::http::verb::get,
+                                        fetchpp::http::url("get"_http));
+
+  std::vector<std::tuple<std::future<void>, fetchpp::http::response>> results{
+      4};
+  for (auto& [fut, response] : results)
+    fut = session.push_request(request, response, boost::asio::use_future);
+
+  for (auto& [fut, response] : results)
+  {
+    REQUIRE_NOTHROW(
+        fake_session.async_reply_back(bb::http::status::ok, net::use_future)
+            .get());
+    REQUIRE_NOTHROW(fut.get());
+  }
+  REQUIRE_NOTHROW(session.async_stop(net::use_future).get());
+}
+
+TEST_CASE_METHOD(worker_fixture,
+                 "session is interrupted once while pushing multiple requests",
+                 "[session][interrupt][fake]")
+{
+  test::helpers::fake_server server(worker(1).ex);
+  auto dest = tcp_endpoint_to_url(server.local_endpoint(), "/get", "http");
+  auto session = fetchpp::session(
+      fetchpp::detail::to_endpoint<false>(URL(dest)), worker().ex, 30s);
+
+  auto request = fetchpp::http::request(fetchpp::http::verb::get,
+                                        fetchpp::http::url("get"_http));
+  std::deque<std::tuple<std::future<void>, fetchpp::http::response>> results{4};
+  for (auto& [fut, response] : results)
+    fut = session.push_request(request, response, net::use_future);
+  // receive the first one
+  auto fake_session = server.async_accept(fetchpp::net::use_future).get();
+  {
+    auto& [fut, response] = results.front();
+    REQUIRE_NOTHROW(
+        fake_session.async_reply_back(bb::http::status::ok, net::use_future)
+            .get());
+    REQUIRE_NOTHROW(fut.get());
+    REQUIRE(response.result_int() == 200);
+    results.pop_front();
+  }
+  {
+    auto& [fut, response] = results.front();
+    REQUIRE_NOTHROW(fake_session.async_receive_some(10, net::use_future).get());
+    REQUIRE_NOTHROW(fake_session.close());
+    fake_session = server.async_accept(fetchpp::net::use_future).get();
+    REQUIRE_NOTHROW(
+        fake_session.async_reply_back(bb::http::status::ok, net::use_future)
+            .get());
+    REQUIRE_NOTHROW(fut.get());
+    REQUIRE(response.result_int() == 200);
+    results.pop_front();
+  }
+  for (auto& [fut, response] : results)
+  {
+    REQUIRE_NOTHROW(
+        fake_session.async_reply_back(bb::http::status::ok, net::use_future)
+            .get());
+    REQUIRE_NOTHROW(fut.get());
+    REQUIRE(response.result_int() == 200);
+  }
+}
+
+TEST_CASE_METHOD(worker_fixture,
+                 "session is interrupted twice on the same request while "
+                 "pushing multiple requests",
+                 "[session][interrupt][fake]")
+{
+  test::helpers::fake_server server(worker(1).ex);
+  auto dest = tcp_endpoint_to_url(server.local_endpoint(), "/get", "http");
+  auto session = fetchpp::session(
+      fetchpp::detail::to_endpoint<false>(URL(dest)), worker().ex, 30s);
+
+  auto request = fetchpp::http::request(fetchpp::http::verb::get,
+                                        fetchpp::http::url("get"_http));
+  std::deque<std::tuple<std::future<void>, fetchpp::http::response>> results{5};
+  for (auto& [fut, response] : results)
+    fut = session.push_request(request, response, net::use_future);
+  auto fake_session = server.async_accept(fetchpp::net::use_future).get();
+  {
+    auto& [fut, response] = results.front();
+    REQUIRE_NOTHROW(
+        fake_session.async_reply_back(bb::http::status::ok, net::use_future)
+            .get());
+    REQUIRE_NOTHROW(fut.get());
+    INFO("the first request goes smoothly");
+    REQUIRE(response.result_int() == 200);
+    results.pop_front();
+  }
+  {
+    auto& [fut, response] = results.front();
+    REQUIRE_NOTHROW(fake_session.async_receive_some(10, net::use_future).get());
+    UNSCOPED_INFO("interrupting the first time");
+    REQUIRE_NOTHROW(fake_session.close());
+    fake_session = server.async_accept(fetchpp::net::use_future).get();
+    REQUIRE_NOTHROW(fake_session.async_receive_some(10, net::use_future).get());
+    UNSCOPED_INFO("interrupting the second time");
+    REQUIRE_NOTHROW(fake_session.close());
+    REQUIRE_THROWS_MATCHES(fut.get(),
+                           boost::system::system_error,
+                           HasErrorCode(boost::asio::error::connection_reset));
+    results.pop_front();
+  }
+  INFO("the remaining request are aborted");
+  for (auto& [fut, response] : results)
+    REQUIRE_THROWS_MATCHES(fut.get(),
+                           boost::system::system_error,
+                           HasErrorCode(boost::asio::error::operation_aborted));
+}
+
+TEST_CASE_METHOD(worker_fixture,
+                 "session is interrupted twice on a different request while "
+                 "pushing multiple requests",
+                 "[session][interrupt][fake]")
+{
+  test::helpers::fake_server server(worker(1).ex);
+  auto dest = tcp_endpoint_to_url(server.local_endpoint(), "/get", "http");
+  auto session = fetchpp::session(
+      fetchpp::detail::to_endpoint<false>(URL(dest)), worker().ex, 30s);
+
+  auto request = fetchpp::http::request(fetchpp::http::verb::get,
+                                        fetchpp::http::url("get"_http));
+  std::deque<std::tuple<std::future<void>, fetchpp::http::response>> results{5};
+  for (auto& [fut, response] : results)
+    fut = session.push_request(request, response, net::use_future);
+  auto fake_session = server.async_accept(fetchpp::net::use_future).get();
+  {
+    auto& [fut, response] = results.front();
+    REQUIRE_NOTHROW(
+        fake_session.async_reply_back(bb::http::status::ok, net::use_future)
+            .get());
+    REQUIRE_NOTHROW(fut.get());
+    INFO("the first request goes smoothly");
+    REQUIRE(response.result_int() == 200);
+    results.pop_front();
+  }
+  {
+    auto& [fut, response] = results.front();
+    REQUIRE_NOTHROW(fake_session.async_receive_some(10, net::use_future).get());
+    UNSCOPED_INFO("interrupting the first time");
+    REQUIRE_NOTHROW(fake_session.close());
+    fake_session = server.async_accept(fetchpp::net::use_future).get();
+
+    REQUIRE_NOTHROW(
+        fake_session.async_reply_back(bb::http::status::ok, net::use_future)
+            .get());
+    REQUIRE_NOTHROW(fut.get());
+    INFO("the second request goes smoothly");
+    REQUIRE(response.result_int() == 200);
+    results.pop_front();
+  }
+  {
+    auto& [fut, response] = results.front();
+    REQUIRE_NOTHROW(fake_session.async_receive_some(10, net::use_future).get());
+    UNSCOPED_INFO("interrupting the second time");
+    REQUIRE_NOTHROW(fake_session.close());
+    fake_session = server.async_accept(fetchpp::net::use_future).get();
+
+    REQUIRE_NOTHROW(
+        fake_session.async_reply_back(bb::http::status::ok, net::use_future)
+            .get());
+    REQUIRE_NOTHROW(fut.get());
+    INFO("the third request goes smoothly");
+    REQUIRE(response.result_int() == 200);
+    results.pop_front();
+  }
+  INFO("the remaining request proceed normally");
+  for (auto& [fut, response] : results)
+  {
+    REQUIRE_NOTHROW(
+        fake_session.async_reply_back(bb::http::status::ok, net::use_future)
+            .get());
+    REQUIRE_NOTHROW(fut.get());
+    REQUIRE(response.result_int() == 200);
+  }
+}
+
+TEST_CASE_METHOD(worker_fixture,
+                 "session is stopped while running multiple requests",
+                 "[session][stop][fake]")
+{
+  test::helpers::fake_server server(worker(1).ex);
+  auto dest = tcp_endpoint_to_url(server.local_endpoint(), "/get", "http");
+  auto session = fetchpp::session(
+      fetchpp::detail::to_endpoint<false>(URL(dest)), worker(2).ex, 30s);
+  auto fut = session.async_start(net::use_future);
+  auto fake_session = server.async_accept(net::use_future).get();
+  REQUIRE_NOTHROW(fut.get());
+  auto request = fetchpp::http::request(fetchpp::http::verb::get,
+                                        fetchpp::http::url("get"_http));
+
+  std::deque<std::tuple<std::future<void>, fetchpp::http::response>> results{6};
+  for (auto& [fut, response] : results)
+    fut = session.push_request(request, response, boost::asio::use_future);
+
+  for (auto i = 0u; i < 3; ++i)
+  {
+    auto& [fut, response] = results.front();
+    REQUIRE_NOTHROW(
+        fake_session.async_reply_back(bb::http::status::ok, net::use_future)
+            .get());
+    REQUIRE_NOTHROW(fut.get());
+    results.pop_front();
+  }
+  REQUIRE_NOTHROW(session.async_stop(net::use_future).get());
+
+  for (auto& [fut, response] : results)
+    REQUIRE_THROWS(fut.get());
+  REQUIRE_NOTHROW(session.async_stop(net::use_future).get());
+}
+
+// ======================= fake
 
 TEST_CASE_METHOD(ioc_fixture,
                  "session fails to auto connect on bad domain",
@@ -77,13 +401,46 @@ TEST_CASE_METHOD(
 }
 
 TEST_CASE_METHOD(ioc_fixture,
+                 "sessions abort when connection times out",
+                 "[session][delay]")
+{
+  ssl::context sslc(ssl::context::tlsv12_client);
+  auto const url = fetchpp::http::url("delay/3"_http);
+  auto request = fetchpp::http::request(fetchpp::http::verb::get, url);
+  auto session = fetchpp::session(fetchpp::secure_endpoint("10.255.255.1", 444),
+                                  ioc.get_executor(),
+                                  1s,
+                                  sslc);
+  fetchpp::http::response response;
+  REQUIRE_THROWS_MATCHES(
+      session.push_request(request, response, fetchpp::net::use_future).get(),
+      boost::system::system_error,
+      HasErrorCode(boost::beast::error::timeout));
+}
+
+TEST_CASE_METHOD(ioc_fixture,
+                 "session aborts a request that takes too much time",
+                 "[session][delay]")
+{
+  auto const url = fetchpp::http::url("delay/4"_http);
+  auto session =
+      fetchpp::session(fetchpp::detail::to_endpoint<false>(url), ex, 1s);
+  auto request = fetchpp::http::request(fetchpp::http::verb::get, url);
+  fetchpp::http::response response;
+  REQUIRE_THROWS_MATCHES(
+      session.push_request(request, response, fetchpp::net::use_future).get(),
+      boost::system::system_error,
+      HasErrorCode(boost::beast::error::timeout));
+}
+
+TEST_CASE_METHOD(ioc_fixture,
                  "session executes two requests pushed",
                  "[session][push]")
 {
   ssl::context context(ssl::context::tlsv12_client);
   auto const url = fetchpp::http::url("get"_https);
-  auto session = fetchpp::session(
-      fetchpp::detail::to_endpoint(url), ex, std::chrono::seconds(30), context);
+  auto session =
+      fetchpp::session(fetchpp::detail::to_endpoint(url), ex, 30s, context);
   auto request = fetchpp::http::request(fetchpp::http::verb::get,
                                         fetchpp::http::url("get"_https));
   {
@@ -101,65 +458,8 @@ TEST_CASE_METHOD(ioc_fixture,
 }
 
 TEST_CASE_METHOD(ioc_fixture,
-                 "sessions abort when connection times out",
-                 "[session][delay]")
-{
-  ssl::context sslc(ssl::context::tlsv12_client);
-  auto const url = fetchpp::http::url("delay/4"_http);
-  auto request = fetchpp::http::request(fetchpp::http::verb::get, url);
-  auto session = fetchpp::session(
-      fetchpp::secure_endpoint("10.255.255.1", 444), ex, 3s, sslc);
-  fetchpp::http::response response;
-  REQUIRE_THROWS_MATCHES(
-      session.push_request(request, response, fetchpp::net::use_future).get(),
-      boost::system::system_error,
-      HasErrorCode(boost::beast::error::timeout));
-}
-
-TEST_CASE_METHOD(ioc_fixture,
-                 "session aborts a request that takes too much time",
-                 "[session][delay]")
-{
-  auto const url = fetchpp::http::url("delay/4"_http);
-  auto session =
-      fetchpp::session(fetchpp::detail::to_endpoint<false>(url), ex, 2s);
-  auto request = fetchpp::http::request(fetchpp::http::verb::get, url);
-  fetchpp::http::response response;
-  REQUIRE_THROWS_MATCHES(
-      session.push_request(request, response, fetchpp::net::use_future).get(),
-      boost::system::system_error,
-      HasErrorCode(boost::beast::error::timeout));
-}
-
-TEST_CASE("session executes multiple requests pushed", "[session][push]")
-{
-  fetchpp::net::io_context ioc;
-  ssl::context context(ssl::context::tlsv12_client);
-  auto const url = fetchpp::http::url("get"_https);
-  auto session = fetchpp::session(
-      fetchpp::detail::to_endpoint(url), ioc.get_executor(), 30s, context);
-  auto request = fetchpp::http::request(fetchpp::http::verb::get, url);
-  auto request2 = fetchpp::http::request(fetchpp::http::verb::get, url);
-
-  fetchpp::http::response response;
-  auto fut = session.push_request(request, response, fetchpp::net::use_future);
-
-  fetchpp::http::response response2;
-  auto fut2 =
-      session.push_request(request2, response2, fetchpp::net::use_future);
-
-  ioc.run(); // run all the requests.
-
-  fut.get();
-  REQUIRE(response.result_int() == 200);
-
-  fut2.get();
-  REQUIRE(response2.result_int() == 200);
-}
-
-TEST_CASE_METHOD(ioc_fixture,
                  "session executes multiple requests pushed with some delay",
-                 "[session][push][delay]")
+                 "[session][http][push][delay]")
 {
   auto const urlget = fetchpp::http::url("get"_http);
   auto const urldelay = fetchpp::http::url("delay/3"_http);
@@ -184,7 +484,7 @@ TEST_CASE_METHOD(ioc_fixture,
       boost::system::system_error,
       HasErrorCode(boost::beast::error::timeout) ||
           HasErrorCode(boost::asio::ssl::error::stream_truncated));
-  REQUIRE(session.pending_requests() == 0);
+  REQUIRE(!session.has_tasks());
 }
 
 TEST_CASE_METHOD(ioc_fixture,
@@ -207,54 +507,9 @@ TEST_CASE_METHOD(ioc_fixture,
     REQUIRE_NOTHROW(session.async_stop(boost::asio::use_future).get());
     for (auto& future : futures)
       future.wait();
-    REQUIRE(session.pending_requests() == 0);
+    REQUIRE(!session.has_tasks());
   }
 }
-
-TEST_CASE_METHOD(
-    ioc_fixture,
-    "session closes ungracefully while multiple request are executed",
-    "[session][close][delay]")
-{
-  auto begraceful =
-      GENERATE(fetchpp::GracefulShutdown::Yes, fetchpp::GracefulShutdown::No);
-  SECTION("closing test")
-  {
-    auto context = ssl::context(ssl::context::tlsv12_client);
-    auto const urldelay = fetchpp::http::url("delay/1"_https);
-    auto session = fetchpp::session(
-        fetchpp::detail::to_endpoint<true>(urldelay), ex, 5s, context);
-
-    // wait for the connecton to established
-    {
-      auto const urlget = fetchpp::http::url("get"_https);
-      auto get = fetchpp::http::request(fetchpp::http::verb::get, urlget);
-      fetchpp::http::response response;
-      auto fut = session.push_request(get, response, fetchpp::net::use_future);
-      REQUIRE_NOTHROW(fut.get());
-      REQUIRE(response.result_int() == 200);
-    }
-
-    {
-      auto delay = fetchpp::http::request(fetchpp::http::verb::get, urldelay);
-      std::vector<fetchpp::http::response> responses(10);
-      std::vector<std::future<void>> futures;
-      for (int i = 1; i < 10; ++i)
-        futures.push_back(
-            session.push_request(delay, responses[i], boost::asio::use_future));
-
-      {
-        CAPTURE(begraceful);
-        REQUIRE_NOTHROW(
-            session.async_stop(begraceful, fetchpp::net::use_future).get());
-      }
-      for (auto& future : futures)
-        future.wait();
-      REQUIRE(session.pending_requests() == 0);
-    }
-  }
-}
-
 TEST_CASE_METHOD(ioc_fixture,
                  "session executes one request through proxy tunnel",
                  "[session][proxy][push]")
@@ -274,5 +529,50 @@ TEST_CASE_METHOD(ioc_fixture,
     fetchpp::http::response response;
     session.push_request(request, response, use_future).get();
     REQUIRE(response.result_int() == 200);
+  }
+}
+
+TEST_CASE_METHOD(
+    worker_fixture,
+    "session closes ungracefully while multiple request are executed",
+    "[session][https][close][delay]")
+{
+  auto begraceful =
+      GENERATE(fetchpp::GracefulShutdown::Yes, fetchpp::GracefulShutdown::No);
+  DYNAMIC_SECTION("closing test gracefully: " << begraceful)
+  {
+    auto context = ssl::context(ssl::context::tlsv12_client);
+    auto const urldelay = fetchpp::http::url("delay/3"_https);
+    auto session =
+        fetchpp::session(fetchpp::detail::to_endpoint<true>(urldelay),
+                         worker(1).ex,
+                         5s,
+                         context);
+
+    // wait for the connecton to settle
+    {
+      auto const urlget = fetchpp::http::url("get"_https);
+      auto get = fetchpp::http::request(fetchpp::http::verb::get, urlget);
+      fetchpp::http::response response;
+      auto fut = session.push_request(get, response, fetchpp::net::use_future);
+      REQUIRE_NOTHROW(fut.get());
+      REQUIRE(response.result_int() == 200);
+    }
+
+    {
+      auto delay = fetchpp::http::request(fetchpp::http::verb::get, urldelay);
+      std::deque<std::tuple<std::future<void>, fetchpp::http::response>>
+          results(10);
+      for (auto& [fut, res] : results)
+        fut = session.push_request(delay, res, boost::asio::use_future);
+
+      {
+        REQUIRE_NOTHROW(
+            session.async_stop(begraceful, fetchpp::net::use_future).get());
+      }
+      for (auto& [fut, res] : results)
+        fut.wait();
+      REQUIRE(!session.has_tasks());
+    }
   }
 }

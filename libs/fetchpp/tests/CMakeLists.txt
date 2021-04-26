@@ -3,7 +3,6 @@ project(fetchpp-functional-tests)
 add_library(test_helpers
   helpers/format.cpp
   helpers/test_domain.cpp
-  helpers/fake_server.cpp
   helpers/https_connect.cpp
   helpers/worker_fixture.cpp
   helpers/server_certificate.cpp

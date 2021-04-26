@@ -86,7 +86,7 @@ public:
           return boost::variant2::visit(
               detail::overloaded{[&](Session const& session) {
                                    return endpoint == session.endpoint() &&
-                                          session.pending_requests() <
+                                          session.pending_tasks() <
                                               max_pending_per_session();
                                  },
                                  [&](auto const&) { return false; }},

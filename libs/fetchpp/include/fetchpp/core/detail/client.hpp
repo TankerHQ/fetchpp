@@ -118,6 +118,7 @@ struct client_stop_sessions_op
   GracefulShutdown graceful_;
   Client& client_;
   Handler handler_;
+  error_code ec_ = {};
 
   typename Client::sessions::iterator begin_ = {};
   typename Client::sessions::iterator end_ = {};
@@ -136,8 +137,12 @@ struct client_stop_sessions_op
               return session.async_stop(graceful_, std::move(*this));
             },
             *begin_);
+        if (ec)
+          ec_ = ec;
         ++begin_;
       }
+      if (ec_)
+        ec = net::error::operation_aborted;
       net::make_post(beast::bind_front_handler(std::move(handler_), ec),
                      get_executor().get_inner_executor());
     }
