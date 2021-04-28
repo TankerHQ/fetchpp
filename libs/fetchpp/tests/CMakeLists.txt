@@ -3,7 +3,6 @@ project(fetchpp-functional-tests)
 add_library(test_helpers
   helpers/format.cpp
   helpers/test_domain.cpp
-  helpers/fake_server.cpp
   helpers/https_connect.cpp
   helpers/worker_fixture.cpp
   helpers/server_certificate.cpp
@@ -66,5 +65,5 @@ else()
 endif()
 
 add_test(NAME test_session COMMAND test_session ${FETCHPP_TEST_FILTER})
-add_test(NAME test_client COMMAND test_client ~[stop]${FETCHPP_TEST_FILTER})
+add_test(NAME test_client COMMAND test_client ${FETCHPP_TEST_FILTER})
 add_test(NAME test_functional COMMAND test_functional)

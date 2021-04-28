@@ -8,6 +8,7 @@
 #include <boost/beast/core/bind_handler.hpp>
 #include <boost/beast/core/stream_traits.hpp>
 
+#include <fetchpp/core/detail/cancel_socket.hpp>
 #include <fetchpp/core/detail/coroutine.hpp>
 
 #include <fetchpp/alias/beast.hpp>
@@ -61,6 +62,12 @@ async_basic_connect_op(detail::base_endpoint&, AsyncStream&)
     -> async_basic_connect_op<AsyncStream>;
 }
 
+enum class GracefulShutdown : bool
+{
+  Yes = true,
+  No = false,
+};
+
 template <typename AsyncStream, typename DynamicBuffer>
 class basic_async_transport
 {
@@ -82,12 +89,14 @@ public:
   template <typename... Args>
   basic_async_transport(DynamicBuffer buffer,
                         std::chrono::nanoseconds timeout,
+                        net::executor ex,
                         Args&&... args)
-    : stream_creator_([params = std::tuple<Args...>(
+    : stream_creator_([ex,
+                       params = std::tuple<Args...>(
                            std::forward<Args>(args)...)]() mutable {
         return std::apply(
-            [](auto&&... args) {
-              return next_layer_type(std::forward<decltype(args)>(args)...);
+            [ex](auto&&... args) {
+              return next_layer_type(ex, std::forward<decltype(args)>(args)...);
             },
             std::move(params));
       }),
@@ -99,8 +108,11 @@ public:
   }
 
   template <typename... Args>
-  basic_async_transport(std::chrono::nanoseconds timeout, Args&&... args)
-    : basic_async_transport(buffer_type{}, timeout, std::forward<Args>(args)...)
+  basic_async_transport(net::executor ex,
+                        std::chrono::nanoseconds timeout,
+                        Args&&... args)
+    : basic_async_transport(
+          buffer_type{}, timeout, ex, std::forward<Args>(args)...)
   {
   }
 
@@ -130,16 +142,27 @@ public:
   template <typename CompletionToken>
   auto async_close(CompletionToken&& token)
   {
+    return this->async_close(GracefulShutdown::Yes,
+                             std::forward<CompletionToken>(token));
+  }
+
+  template <typename CompletionToken>
+  auto async_close(GracefulShutdown beGraceful, CompletionToken&& token)
+  {
     return net::async_compose<CompletionToken, void(error_code)>(
-        [this, coro_ = net::coroutine{}](auto& self,
-                                         error_code ec = {}) mutable {
+        [this, beGraceful, coro_ = net::coroutine{}](
+            auto& self, error_code ec = {}) mutable {
           FETCHPP_REENTER(coro_)
           {
             set_running(false);
             this->setup_timer();
             if (this->is_open())
             {
-              FETCHPP_YIELD do_async_close(*this, std::move(self));
+              detail::do_cancel(*stream_);
+              if (beGraceful == GracefulShutdown::Yes)
+              {
+                FETCHPP_YIELD do_async_close(*this, std::move(self));
+              }
             }
             else
             {

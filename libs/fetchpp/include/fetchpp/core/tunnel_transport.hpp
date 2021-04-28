@@ -133,8 +133,8 @@ public:
   using next_layer_creator_sig = next_layer_type();
   using next_layer_creator = std::function<next_layer_creator_sig>;
 
-  tunnel_async_transport(std::chrono::nanoseconds timeout,
-                         net::executor ex,
+  tunnel_async_transport(net::executor ex,
+                         std::chrono::nanoseconds timeout,
                          net::ssl::context& ctx)
     : stream_creator_([ex, &ctx]() { return next_layer_type(ex, ctx); }),
       stream_(std::make_unique<next_layer_type>(stream_creator_())),
@@ -169,15 +169,28 @@ public:
   template <typename CompletionToken>
   auto async_close(CompletionToken&& token)
   {
+    return this->async_close(GracefulShutdown::Yes,
+                             std::forward<CompletionToken>(token));
+  }
+
+  template <typename CompletionToken>
+  auto async_close(GracefulShutdown beGraceful, CompletionToken&& token)
+  {
     return net::async_compose<CompletionToken, void(error_code)>(
-        [this, coro_ = net::coroutine{}](auto& self,
-                                         error_code ec = {}) mutable {
+        [this, beGraceful, coro_ = net::coroutine{}](
+            auto& self, error_code ec = {}) mutable {
           FETCHPP_REENTER(coro_)
           {
             set_running(false);
             this->setup_timer();
             if (this->is_open())
-              FETCHPP_YIELD detail::do_async_close(*this, std::move(self));
+            {
+              detail::do_cancel(*stream_);
+              if (beGraceful == GracefulShutdown::Yes)
+              {
+                FETCHPP_YIELD detail::do_async_close(*this, std::move(self));
+              }
+            }
             else
             {
               this->resolver().cancel();

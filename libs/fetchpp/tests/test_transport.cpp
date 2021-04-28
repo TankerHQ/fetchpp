@@ -49,7 +49,7 @@ auto tcp_endpoint_to_url(net::ip::tcp::endpoint const& endpoint)
 }
 TEST_CASE_METHOD(ioc_fixture, "connect timeouts", "[transport][http][timeout]")
 {
-  fetchpp::tcp_async_transport ts(500ms, ioc);
+  fetchpp::tcp_async_transport ts(ioc.get_executor(), 500ms);
   // this is a non routable ip
   auto endpoint = fetchpp::plain_endpoint("10.255.255.1", 8080);
   auto const now = std::chrono::high_resolution_clock::now();
@@ -67,7 +67,7 @@ TEST_CASE_METHOD(ioc_fixture, "transport one ssl", "[transport][https]")
   auto const url = URL("get"_https);
   ssl::context context(ssl::context::tlsv12_client);
 
-  fetchpp::ssl_async_transport ts(5s, ioc, context);
+  fetchpp::ssl_async_transport ts(ioc.get_executor(), 5s, context);
   auto endpoint = fetchpp::detail::to_endpoint<true>(url);
   REQUIRE_NOTHROW(ts.async_connect(endpoint, boost::asio::use_future).get());
   auto const request = fetchpp::http::request(fetchpp::http::verb::get, url);
@@ -79,11 +79,13 @@ TEST_CASE_METHOD(ioc_fixture, "transport one ssl", "[transport][https]")
   REQUIRE_NOTHROW(ts.async_close(boost::asio::use_future).get());
 }
 
-TEST_CASE_METHOD(ioc_fixture, "transport one tcp", "[http][poly_body][transport]")
+TEST_CASE_METHOD(ioc_fixture,
+                 "transport one tcp",
+                 "[http][poly_body][transport]")
 {
   auto const url = URL("get"_http);
 
-  fetchpp::tcp_async_transport ts(5s, ioc);
+  fetchpp::tcp_async_transport ts(ioc.get_executor(), 5s);
   auto endpoint = fetchpp::detail::to_endpoint<false>(url);
   REQUIRE_NOTHROW(ts.async_connect(endpoint, boost::asio::use_future).get());
   auto const request = fetchpp::http::request(fetchpp::http::verb::get, url);
@@ -100,7 +102,7 @@ TEST_CASE_METHOD(worker_fixture,
                  "[fake][http][poly_body][transport]")
 {
   test::helpers::fake_server server(worker(1).ex);
-  fetchpp::tcp_async_transport ts(5s, worker().ex);
+  fetchpp::tcp_async_transport ts(worker().ex, 5s);
 
   auto url = tcp_endpoint_to_url(server.local_endpoint());
   url.set_pathname("/get");
@@ -112,34 +114,46 @@ TEST_CASE_METHOD(worker_fixture,
 
   auto const request = fetchpp::http::request(fetchpp::http::verb::get, url);
   fetchpp::http::response response;
-  auto process_fut = fetchpp::async_process_one(ts, request, response, boost::asio::use_future);
-  REQUIRE_NOTHROW(fake_session.async_reply_back(bb::http::status::ok, net::use_future).get());
+  auto process_fut = fetchpp::async_process_one(
+      ts, request, response, boost::asio::use_future);
+  REQUIRE_NOTHROW(
+      fake_session.async_reply_back(bb::http::status::ok, net::use_future)
+          .get());
   CHECK(response.result_int() == 200);
   REQUIRE_NOTHROW(ts.async_close(boost::asio::use_future).get());
 }
 
 TEST_CASE_METHOD(worker_fixture,
-                 "interrupt transport after receive",
+                 "interrupt transport after server has received request",
                  "[fake][http][poly_body][transport]")
 {
-  test::helpers::fake_server server(worker(1).ex);
-  fetchpp::tcp_async_transport ts(5s, worker(2).ex);
+  auto begraceful =
+      GENERATE(fetchpp::GracefulShutdown::Yes, fetchpp::GracefulShutdown::No);
+  SECTION("test interrupt")
+  {
+    test::helpers::fake_server server(worker(1).ex);
+    fetchpp::tcp_async_transport ts(worker(2).ex, 5s);
 
-  auto url = tcp_endpoint_to_url(server.local_endpoint());
-  url.set_pathname("/get");
+    auto url = tcp_endpoint_to_url(server.local_endpoint());
+    url.set_pathname("/get");
 
-  auto endpoint = fetchpp::detail::to_endpoint<false>(url);
-  auto future = ts.async_connect(endpoint, boost::asio::use_future);
-  auto fake_session = server.async_accept(fetchpp::net::use_future).get();
-  REQUIRE_NOTHROW(future.get());
+    auto endpoint = fetchpp::detail::to_endpoint<false>(url);
+    auto future = ts.async_connect(endpoint, boost::asio::use_future);
+    auto fake_session = server.async_accept(fetchpp::net::use_future).get();
+    REQUIRE_NOTHROW(future.get());
 
-  auto const request = fetchpp::http::request(fetchpp::http::verb::get, url);
-  fetchpp::http::response response;
-  auto process_fut = fetchpp::async_process_one(ts, request, response, boost::asio::use_future);
-  REQUIRE_NOTHROW(fake_session.async_receive(net::use_future).get());
-  REQUIRE_NOTHROW(ts.async_close(net::use_future).get());
-  REQUIRE_THROWS(process_fut.get());
-  REQUIRE_NOTHROW(ts.async_close(boost::asio::use_future).get());
+    auto const request = fetchpp::http::request(fetchpp::http::verb::get, url);
+    fetchpp::http::response response;
+    auto process_fut = fetchpp::async_process_one(
+        ts, request, response, boost::asio::use_future);
+    REQUIRE_NOTHROW(fake_session.async_receive(net::use_future).get());
+    {
+      CAPTURE(begraceful);
+      REQUIRE_NOTHROW(ts.async_close(begraceful, net::use_future).get());
+    }
+    REQUIRE_THROWS(process_fut.get());
+    REQUIRE_NOTHROW(ts.async_close(boost::asio::use_future).get());
+  }
 }
 
 TEST_CASE_METHOD(ioc_fixture,
@@ -148,7 +162,7 @@ TEST_CASE_METHOD(ioc_fixture,
 {
   auto const url = URL("delay/5"_http);
 
-  fetchpp::tcp_async_transport ts(1s, ioc);
+  fetchpp::tcp_async_transport ts(ioc.get_executor(), 1s);
   auto endpoint = fetchpp::detail::to_endpoint<false>(url);
   REQUIRE_NOTHROW(ts.async_connect(endpoint, boost::asio::use_future).get());
   auto const request = fetchpp::http::request(fetchpp::http::verb::get, url);
@@ -171,7 +185,7 @@ TEST_CASE_METHOD(ioc_fixture,
   auto const url = URL("delay/5"_https);
   ssl::context context(ssl::context::tlsv12_client);
 
-  fetchpp::ssl_async_transport ts(1s, ioc, context);
+  fetchpp::ssl_async_transport ts(ioc.get_executor(), 1s, context);
   auto endpoint = fetchpp::detail::to_endpoint<true>(url);
   REQUIRE_NOTHROW(ts.async_connect(endpoint, boost::asio::use_future).get());
   auto const request = fetchpp::http::request(fetchpp::http::verb::get, url);
@@ -190,17 +204,25 @@ TEST_CASE_METHOD(ioc_fixture,
                  "transport closes and reopens",
                  "[transport][https][close]")
 {
-  auto const url = URL("get"_https);
-  ssl::context context(ssl::context::tlsv12_client);
+  auto begraceful =
+      GENERATE(fetchpp::GracefulShutdown::Yes, fetchpp::GracefulShutdown::No);
+  SECTION("closing test")
+  {
+    auto const url = URL("get"_https);
+    ssl::context context(ssl::context::tlsv12_client);
 
-  fetchpp::ssl_async_transport ts(5s, ioc, context);
-  auto endpoint = fetchpp::detail::to_endpoint<true>(url);
-  REQUIRE_NOTHROW(ts.async_connect(endpoint, boost::asio::use_future).get());
-  auto const request = fetchpp::http::request(fetchpp::http::verb::get, url);
-  fetchpp::http::response response;
-  REQUIRE_NOTHROW(
-      fetchpp::async_process_one(ts, request, response, boost::asio::use_future)
-          .get());
-  REQUIRE_NOTHROW(ts.async_close(boost::asio::use_future).get());
-  REQUIRE_NOTHROW(ts.async_connect(endpoint, boost::asio::use_future).get());
+    fetchpp::ssl_async_transport ts(ioc.get_executor(), 5s, context);
+    auto endpoint = fetchpp::detail::to_endpoint<true>(url);
+    REQUIRE_NOTHROW(ts.async_connect(endpoint, boost::asio::use_future).get());
+    auto const request = fetchpp::http::request(fetchpp::http::verb::get, url);
+    fetchpp::http::response response;
+    REQUIRE_NOTHROW(fetchpp::async_process_one(
+                        ts, request, response, boost::asio::use_future)
+                        .get());
+    {
+      CAPTURE(begraceful);
+      REQUIRE_NOTHROW(ts.async_close(boost::asio::use_future).get());
+    }
+    REQUIRE_NOTHROW(ts.async_connect(endpoint, boost::asio::use_future).get());
+  }
 }

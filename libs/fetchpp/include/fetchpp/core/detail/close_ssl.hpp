@@ -13,9 +13,7 @@
 #include <fetchpp/alias/error_code.hpp>
 #include <fetchpp/alias/tcp.hpp>
 
-namespace fetchpp
-{
-namespace detail
+namespace fetchpp::detail
 {
 template <typename AsyncSSLStream>
 struct async_ssl_close_op
@@ -30,11 +28,6 @@ struct async_ssl_close_op
   {
     FETCHPP_REENTER(coro_)
     {
-      beast::get_lowest_layer(stream_).socket().cancel(ec);
-      // ignore the error
-      assert(!ec);
-      ec = {};
-      FETCHPP_YIELD net::post(beast::bind_front_handler(std::move(self)));
       FETCHPP_YIELD stream_.async_shutdown(std::move(self));
       if (ec == net::error::eof)
         // http://stackoverflow.com/questions/25587403/boost-asio-ssl-async-shutdown-always-finishes-with-an-error
@@ -56,7 +49,6 @@ struct async_ssl_close_op
 };
 template <typename NextLayer>
 async_ssl_close_op(beast::ssl_stream<NextLayer>&)
-    ->async_ssl_close_op<beast::ssl_stream<NextLayer>>;
-}
+    -> async_ssl_close_op<beast::ssl_stream<NextLayer>>;
 
 }
