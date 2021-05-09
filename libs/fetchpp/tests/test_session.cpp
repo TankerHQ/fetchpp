@@ -150,8 +150,7 @@ TEST_CASE_METHOD(worker_fixture,
   auto request = fetchpp::http::request(fetchpp::http::verb::get,
                                         fetchpp::http::url("get"_http));
 
-  std::vector<std::tuple<std::future<void>, fetchpp::http::response>> results{
-      4};
+  std::deque<std::tuple<std::future<void>, fetchpp::http::response>> results{6};
   for (auto& [fut, response] : results)
     fut = session.push_request(request, response, boost::asio::use_future);
 
@@ -172,11 +171,11 @@ TEST_CASE_METHOD(worker_fixture,
   test::helpers::fake_server server(worker(1).ex);
   auto dest = tcp_endpoint_to_url(server.local_endpoint(), "/get", "http");
   auto session = fetchpp::session(
-      fetchpp::detail::to_endpoint<false>(URL(dest)), worker().ex, 30s);
+      fetchpp::detail::to_endpoint<false>(URL(dest)), worker(0).ex, 30s);
 
   auto request = fetchpp::http::request(fetchpp::http::verb::get,
                                         fetchpp::http::url("get"_http));
-  std::deque<std::tuple<std::future<void>, fetchpp::http::response>> results{4};
+  std::deque<std::tuple<std::future<void>, fetchpp::http::response>> results{6};
   for (auto& [fut, response] : results)
     fut = session.push_request(request, response, net::use_future);
   // receive the first one

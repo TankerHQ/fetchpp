@@ -127,7 +127,7 @@ TEST_CASE_METHOD(ioc_fixture,
   using fetchpp::http::url;
   auto const dstUrl = GENERATE(
       std::array{
-          URL("get"_http), URL("delay/2"_https), URL("https://google.com")},
+          URL("get"_https), URL("delay/2"_https), URL("https://google.com")},
       std::array{
           URL("delay/2"_http), URL("get"_https), URL("https://google.com")});
   DYNAMIC_SECTION("requesting through " << std::get<0>(dstUrl).scheme())
