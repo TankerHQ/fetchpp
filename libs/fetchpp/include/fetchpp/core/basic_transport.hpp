@@ -43,6 +43,8 @@ struct async_basic_connect_op
     }
     FETCHPP_REENTER(coro_)
     {
+      if (!transport_.is_running())
+        transport_.reset();
       transport_.set_running(true);
       transport_.setup_timer();
       FETCHPP_YIELD transport_.resolver_.async_resolve(
@@ -171,8 +173,6 @@ public:
                   beast::bind_front_handler(std::move(self)));
             }
             this->cancel_timer();
-            this->buffer().clear();
-            this->reset();
             self.complete(ec);
           }
         },
@@ -212,6 +212,7 @@ public:
 
   void reset()
   {
+    this->buffer().clear();
     stream_ = std::make_unique<next_layer_type>(stream_creator_());
   }
 
