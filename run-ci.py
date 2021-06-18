@@ -4,7 +4,6 @@ import argparse
 import tankerci
 import tankerci.cpp
 import tankerci.conan
-import tankerci.git
 
 
 def build_and_test(profile: str, coverage: bool) -> None:
@@ -26,9 +25,6 @@ def main() -> None:
     build_and_test_parser.add_argument("--profile", required=True)
     build_and_test_parser.add_argument("--coverage", action="store_true")
 
-    subparsers.add_parser("deploy")
-    subparsers.add_parser("mirror")
-
     args = parser.parse_args()
     if args.home_isolation:
         tankerci.conan.set_home_isolation()
@@ -36,9 +32,6 @@ def main() -> None:
 
     if args.command == "build-and-test":
         build_and_test(args.profile, args.coverage)
-    elif args.command == "mirror":
-        tankerci.git.mirror(github_url="git@github.com:TankerHQ/fetchpp", force=True)
-
 
 if __name__ == "__main__":
     main()
