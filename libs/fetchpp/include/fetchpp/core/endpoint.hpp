@@ -64,17 +64,21 @@ bool operator!=(basic_endpoint<isSecure1> const&,
 using secure_endpoint = basic_endpoint<true>;
 using plain_endpoint = basic_endpoint<false>;
 
-struct tunnel_endpoint
+class tunnel_endpoint
 {
+public:
   using is_secure = std::integral_constant<bool, true>;
-  plain_endpoint proxy;
-  secure_endpoint target;
 
-  tunnel_endpoint(tunnel_endpoint const&) = default;
-  tunnel_endpoint(tunnel_endpoint&&) = default;
+  tunnel_endpoint(plain_endpoint const&, secure_endpoint const&);
+
+  plain_endpoint const& proxy() const;
+  secure_endpoint const& target() const;
+
+private:
+  plain_endpoint _proxy;
+  secure_endpoint _target;
 };
 
 bool operator==(tunnel_endpoint const&, tunnel_endpoint const&);
 bool operator!=(tunnel_endpoint const&, tunnel_endpoint const&);
-
 }

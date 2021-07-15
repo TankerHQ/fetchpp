@@ -101,7 +101,7 @@ public:
   {
     return net::async_compose<CompletionToken,
                               void(bb::error_code, peer_session<AsyncStream>)>(
-        detail::acceptor_op<AsyncStream>{acceptor_},
+        detail::acceptor_op<AsyncStream>{{acceptor_}},
         std::forward<CompletionToken>(token),
         acceptor_);
   }
@@ -112,7 +112,7 @@ public:
   {
     return net::async_compose<CompletionToken,
                               void(bb::error_code, peer_session<AsyncStream>)>(
-        detail::acceptor_ssl_op<AsyncStream>{acceptor_, context},
+        detail::acceptor_ssl_op<AsyncStream>{{acceptor_}, context},
         token,
         acceptor_);
   }

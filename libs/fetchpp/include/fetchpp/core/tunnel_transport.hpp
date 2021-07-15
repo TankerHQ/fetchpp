@@ -61,17 +61,17 @@ struct async_tunnel_connect_op
       transport_.set_running(true);
       transport_.setup_timer();
       FETCHPP_YIELD transport_.resolver_.async_resolve(
-          endpoint_.proxy.domain(),
-          std::to_string(endpoint_.proxy.port()),
+          endpoint_.proxy().domain(),
+          std::to_string(endpoint_.proxy().port()),
           net::ip::resolver_base::numeric_service,
           std::move(self));
       beast::get_lowest_layer(transport_)
           .socket()
           .set_option(net::ip::tcp::no_delay{true});
       transaction_ = std::make_unique<http_messages>(http_messages::request_t(
-          beast::http::verb::connect, endpoint_.target.host(), 11));
+          beast::http::verb::connect, endpoint_.target().host(), 11));
       transaction_->request.set(beast::http::field::host,
-                                endpoint_.target.host());
+                                endpoint_.target().host());
       transaction_->request.set(beast::http::field::proxy_connection,
                                 "Keep-Alive");
       FETCHPP_YIELD async_process_one(transport_.next_layer().next_layer(),
@@ -106,7 +106,7 @@ struct async_tunnel_connect_op
     }
     // https://www.cloudflare.com/learning/ssl/what-is-sni/
     if (!SSL_set_tlsext_host_name(transport_.next_layer().native_handle(),
-                                  endpoint_.target.domain().data()))
+                                  endpoint_.target().domain().data()))
       return self.complete(error_code{static_cast<int>(::ERR_get_error()),
                                       net::error::get_ssl_category()});
     beast::get_lowest_layer(transport_).async_connect(results, std::move(self));
