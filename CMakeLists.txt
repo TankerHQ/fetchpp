@@ -12,9 +12,6 @@ endif()
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
-conan_basic_setup(TARGETS)
-
 option(WARN_AS_ERROR "add -Werror during compilation" OFF)
 option(WITH_COVERAGE "Enable coverage" OFF)
 option(WARN_AS_ERROR "Add -Werror during compilation" OFF)
