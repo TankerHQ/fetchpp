@@ -24,7 +24,9 @@ stages:
 
 build/linux:
   extends: .build
-  tags: [linux]
+  tags:
+    - linux
+    - tanker
   script:
     - poetry run python run-ci.py --isolate-conan-user-home build-and-test --profile linux-release
 
@@ -50,22 +52,11 @@ coverage:
     - mv build/gcc8-release/coverage coverage
   tags:
     - linux
+    - tanker
   artifacts:
     paths:
       - coverage/
     expire_in: 7 days
-
-mirror:
-  tags:
-    - linux
-  stage: deploy
-  only:
-    - /\Av[0-9.]+\z/   # public release tags
-    - master
-  except:
-    - schedules
-  script:
-    - poetry run python run-ci.py  mirror
 
 pages:
   stage: deploy
