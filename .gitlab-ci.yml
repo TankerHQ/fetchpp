@@ -1,12 +1,7 @@
-image: registry.gitlab.com/tankerhq/docker/native:latest
-
-before_script:
-  - poetry run python -m pip install --upgrade pip
-  - poetry install
-
-stages:
-  - build
-  - deploy
+include:
+  project: TankerHQ/gitlab-ci-files
+  file: /native.yml
+  ref: 2021-08-26-1
 
 .proxy:
   variables:
@@ -15,55 +10,79 @@ stages:
   services:
     - name: registry.gitlab.com/tankerhq/ci/tinyproxy:latest
       alias: tinyproxy
-
-.build:
-  stage: build
-  extends: .proxy
-  except:
-    - schedules
+.jobs:
+  extends:
+    - .build
+    - .proxy
 
 build/linux:
-  extends: .build
-  tags:
-    - linux
-    - tanker
+  extends:
+    - .jobs
+    - .tags/linux
+    - .rules/mr/auto
   script:
     - poetry run python run-ci.py --isolate-conan-user-home build-and-test --profile linux-release
 
-build/macos:
-  extends: .build
-  tags: [macos]
+build/macos/x86_64:
+  extends:
+    - .jobs
+    - .tags/macos/x86_64
+    - .rules/mr/auto
   script:
-    - poetry run python run-ci.py --isolate-conan-user-home build-and-test --profile macos-release
+    - poetry run python run-ci.py --isolate-conan-user-home build-and-test --profile macos-x86_64-release
+
+build/macos/arm:
+  extends:
+    - .jobs
+    - .tags/macos/arm
+    - .rules/mr/auto
+  script:
+    - poetry run python run-ci.py --isolate-conan-user-home build-and-test --profile macos-armv8-release
 
 build/windows:
-  extends: .build
-  tags: [windows]
+  extends:
+    - .jobs
+    - .tags/windows
+    - .rules/mr/auto
   script:
     - poetry run python run-ci.py --isolate-conan-user-home build-and-test --profile vs2019-release
 
-coverage:
-  extends: .proxy
-  stage: build
-  only:
-    - schedules
+build/asan/linux:
+  extends:
+    - .jobs
+    - .tags/linux
+    - .rules/mr/manual
+  script:
+    - poetry run python run-ci.py --isolate-conan-user-home build-and-test --profile linux-asan-release-debinfo --build-missing
+
+nightly/asan/linux:
+  extends:
+    - .jobs
+    - .tags/linux
+    - .rules/nightly
+  script:
+    - poetry run python run-ci.py --isolate-conan-user-home build-and-test --profile linux-asan-release-debinfo --build-missing
+
+nightly/coverage:
+  extends:
+    - .jobs
+    - .tags/linux
+    - .rules/nightly
   script:
     - poetry run python run-ci.py --isolate-conan-user-home build-and-test --profile linux-release --coverage
-    - mv build/gcc8-release/coverage coverage
-  tags:
-    - linux
-    - tanker
+    - mv build/linux-release/coverage coverage
   artifacts:
     paths:
       - coverage/
     expire_in: 7 days
 
 pages:
-  stage: deploy
-  only:
-    - schedules
-  dependencies:
-    - coverage
+  extends:
+    - .deploy
+    - .tags/linux
+    - .rules/nightly
+  needs:
+    - nightly/coverage
   script:
     - mv coverage/ public/
   artifacts:
