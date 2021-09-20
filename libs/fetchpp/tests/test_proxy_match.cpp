@@ -12,7 +12,9 @@ namespace helper
 {
 namespace
 {
-void setenv(std::string_view key, std::string_view value, bool overwrite)
+void setenv(fetchpp::string_view key,
+            fetchpp::string_view value,
+            bool overwrite)
 {
 #ifndef WIN32
   ::setenv(key.data(), value.data(), overwrite);

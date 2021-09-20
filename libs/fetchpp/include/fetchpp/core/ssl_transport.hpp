@@ -13,6 +13,7 @@
 
 #include <fetchpp/alias/beast.hpp>
 #include <fetchpp/alias/error_code.hpp>
+#include <fetchpp/alias/strings.hpp>
 #include <fetchpp/alias/tcp.hpp>
 
 #include <cassert>
@@ -67,14 +68,14 @@ template <typename AsyncTransport>
 async_ssl_connect_op(AsyncTransport&,
                      std::string,
                      std::unique_ptr<tcp::resolver::results_type>)
-    ->async_ssl_connect_op<AsyncTransport>;
+    -> async_ssl_connect_op<AsyncTransport>;
 
 }
 
 template <typename NextLayer, typename DynamicBuffer, typename CompletionToken>
 auto do_async_connect(
     basic_async_transport<beast::ssl_stream<NextLayer>, DynamicBuffer>& ts,
-    std::string_view domain,
+    string_view domain,
     tcp::resolver::results_type resolved_results,
     CompletionToken&& token)
 {

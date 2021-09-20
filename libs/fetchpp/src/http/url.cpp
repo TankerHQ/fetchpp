@@ -4,7 +4,8 @@
 #include <skyr/json/json.hpp>
 
 #include <exception>
-#include <string_view>
+
+#include <fetchpp/alias/strings.hpp>
 
 namespace fetchpp::http
 {
@@ -37,9 +38,10 @@ bool is_ssl_involved(url const& uri)
   return uri.port<std::int16_t>() == 443;
 }
 
-nlohmann::json decode_query(std::string_view query)
+nlohmann::json decode_query(string_view query)
 {
-  return skyr::json::decode_query(query);
+  auto q = std::string_view{query.data(), query.size()};
+  return skyr::json::decode_query(q);
 }
 
 std::string encode_query(nlohmann::json const& json)

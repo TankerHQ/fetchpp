@@ -8,6 +8,7 @@
 #include <boost/beast/http/verb.hpp>
 
 #include <fetchpp/alias/http.hpp>
+#include <fetchpp/alias/strings.hpp>
 
 #include <optional>
 
@@ -22,7 +23,7 @@ public:
   basic_request(http::verb verb, url uri);
 
   url const& uri() const;
-  void accept(std::string_view ct);
+  void accept(string_view ct);
   void accept(http::content_type const& ct);
 
 private:
@@ -45,7 +46,7 @@ url const& basic_request<DynamicBuffer>::uri() const
 }
 
 template <typename DynamicBuffer>
-void basic_request<DynamicBuffer>::accept(std::string_view ct)
+void basic_request<DynamicBuffer>::accept(string_view ct)
 {
   this->set(http::field::accept, ct);
 }

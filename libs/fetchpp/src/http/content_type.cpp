@@ -1,13 +1,16 @@
 #include <fetchpp/http/content_type.hpp>
 
+#include <fetchpp/alias/strings.hpp>
+
 #include <boost/algorithm/string/predicate.hpp>
+
 #include <regex>
 
 namespace fetchpp::http
 {
-content_type::content_type(std::string_view type,
-                           std::string_view charset,
-                           std::string_view boundary)
+content_type::content_type(string_view type,
+                           string_view charset,
+                           string_view boundary)
   : base_t{std::string(type), std::string(charset), std::string(boundary)}
 {
 }
@@ -19,7 +22,7 @@ content_type::content_type(std::string&& type,
 {
 }
 
-content_type content_type::parse(std::string_view sv)
+content_type content_type::parse(string_view sv)
 {
   // https://regex101.com/r/JGZNn8/2/
   static auto const reg = std::regex(
@@ -37,9 +40,9 @@ std::string const& content_type::type() const
   return std::get<0>(*this);
 }
 
-void content_type::type(std::string_view t)
+void content_type::type(string_view t)
 {
-  std::get<0>(*this) = t;
+  std::get<0>(*this) = t.to_string();
 }
 
 std::string const& content_type::charset() const
@@ -47,9 +50,9 @@ std::string const& content_type::charset() const
   return std::get<1>(*this);
 }
 
-void content_type::charset(std::string_view c)
+void content_type::charset(string_view c)
 {
-  std::get<1>(*this) = c;
+  std::get<1>(*this) = c.to_string();
 }
 
 std::string const& content_type::boundary() const
@@ -57,9 +60,9 @@ std::string const& content_type::boundary() const
   return std::get<2>(*this);
 }
 
-void content_type::boundary(std::string_view b)
+void content_type::boundary(string_view b)
 {
-  std::get<2>(*this) = b;
+  std::get<2>(*this) = b.to_string();
 }
 
 bool operator==(content_type const& lhs, content_type const& rhs)

@@ -1,11 +1,14 @@
 #pragma once
 
+#include <boost/beast/core/string_type.hpp>
+
 #include <string>
-#include <string_view>
 
 namespace test::helpers
 {
-auto get_test_host() -> std::string_view;
+using string_view = boost::beast::string_view;
+
+auto get_test_host() -> string_view;
 auto get_test_proxy() -> std::string;
 
 namespace http_literals

@@ -1,8 +1,9 @@
 #pragma once
 
 #include <string>
-#include <string_view>
 #include <type_traits>
+
+#include <fetchpp/alias/strings.hpp>
 
 namespace fetchpp
 {

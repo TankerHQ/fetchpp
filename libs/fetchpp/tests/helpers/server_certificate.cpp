@@ -1,8 +1,7 @@
 #include "server_certificate.hpp"
 
 #include <boost/asio/buffer.hpp>
-
-#include <string_view>
+#include <boost/beast/core/string_type.hpp>
 
 namespace test::helpers
 {
@@ -13,9 +12,11 @@ namespace test::helpers
     10000 -out cert.pem -subj \
     "/C=FR/ST=FR/L=Paris/O=fetchpp/CN=www.example.com"
 */
+using string_view = boost::beast::string_view;
+
 namespace
 {
-std::string_view constexpr cert =
+string_view constexpr cert =
     "-----BEGIN CERTIFICATE-----\n"
     "MIIDjTCCAnWgAwIBAgIULNgESYLQ1bgs7OhZmLBs4toaHqgwDQYJKoZIhvcNAQEL\n"
     "BQAwVjELMAkGA1UEBhMCRlIxCzAJBgNVBAgMAkZSMQ4wDAYDVQQHDAVQYXJpczEQ\n"
@@ -39,7 +40,7 @@ std::string_view constexpr cert =
     "Mg==\n"
     "-----END CERTIFICATE-----\n";
 
-std::string_view constexpr key =
+string_view constexpr key =
     "-----BEGIN PRIVATE KEY-----\n"
     "MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDxZ0kBaHA1TF9x\n"
     "GtzyKsL9M/wjvOq0XM5kCYxidiiYnZODv1yTKqHmeOYXai8GiSnmV9LcjXiiWUFy\n"
@@ -69,7 +70,7 @@ std::string_view constexpr key =
     "G2Dp5IZB0CuJJ/TFnKu8ehE=\n"
     "-----END PRIVATE KEY-----\n";
 
-std::string_view constexpr dh =
+string_view constexpr dh =
     "-----BEGIN DH PARAMETERS-----\n"
     "MIIBCAKCAQEAgagEkC2vRzTwFDaF7tnoaBdD9i+FKYQYDAxf8wmcU9IIOqLHW5ne\n"
     "+RrBkKkoZTkXPr0wd0L4ys1F62KYu7n9Mg1byxCDAu9SkEnw9vNEq39HfBB0ehyg\n"

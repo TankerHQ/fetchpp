@@ -68,7 +68,7 @@ target_include_directories(fetchpp
   PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
-target_compile_definitions(fetchpp PUBLIC BOOST_BEAST_SEPARATE_COMPILATION BOOST_BEAST_USE_STD_STRING_VIEW)
+target_compile_definitions(fetchpp PUBLIC BOOST_BEAST_SEPARATE_COMPILATION)
 
 target_link_libraries(fetchpp PUBLIC CONAN_PKG::boost CONAN_PKG::skyr-url CONAN_PKG::nlohmann_json CONAN_PKG::libressl)
 

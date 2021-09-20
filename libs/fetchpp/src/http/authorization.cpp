@@ -3,10 +3,11 @@
 #include <boost/beast/core/detail/base64.hpp>
 
 #include <fetchpp/alias/beast.hpp>
+#include <fetchpp/alias/strings.hpp>
 
 namespace fetchpp::http::authorization
 {
-bearer::bearer(std::string_view token) : token_(token)
+bearer::bearer(string_view token) : token_(token)
 {
 }
 
@@ -20,7 +21,7 @@ std::string to_string(bearer const& bearer)
   return std::string("Bearer ") + bearer.token();
 }
 
-basic::basic(std::string_view user, std::string_view password)
+basic::basic(string_view user, string_view password)
   : user_(user), password_(password)
 {
 }

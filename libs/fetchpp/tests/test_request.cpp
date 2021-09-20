@@ -10,20 +10,21 @@
 #include <catch2/catch.hpp>
 
 using namespace fetchpp::http::url_literals;
+using fetchpp::string_view;
 
-class ContentTypeMatcher : public Catch::MatcherBase<std::string_view>
+class ContentTypeMatcher : public Catch::MatcherBase<string_view>
 {
   fetchpp::http::content_type ref_ct;
 
 public:
-  ContentTypeMatcher(std::string_view type,
-                     std::string_view charset = "",
-                     std::string_view boundary = "")
+  ContentTypeMatcher(string_view type,
+                     string_view charset = "",
+                     string_view boundary = "")
     : ref_ct(fetchpp::http::content_type(type, charset, boundary))
   {
   }
 
-  [[nodiscard]] bool match(std::string_view const& i) const noexcept override
+  [[nodiscard]] bool match(string_view const& i) const noexcept override
   try
   {
     return ref_ct == fetchpp::http::content_type::parse(i);
@@ -39,9 +40,9 @@ public:
   }
 };
 
-inline ContentTypeMatcher Equals(std::string_view type,
-                                 std::string_view charset = "",
-                                 std::string_view boundary = "")
+inline ContentTypeMatcher Equals(string_view type,
+                                 string_view charset = "",
+                                 string_view boundary = "")
 {
   return ContentTypeMatcher(type, charset, boundary);
 }
@@ -56,8 +57,8 @@ TEST_CASE("parsing content_type", "[content_type]")
              Equals("application/json", "", "--paf--"));
   CHECK_THAT(("application/json; charset=ascii; boundary=--paf--"),
              Equals("application/json", "ascii", "--paf--"));
-  REQUIRE_NOTHROW(content_type::parse(
-      "application/json; charset=ascii; boundary=--paf--"sv));
+  REQUIRE_NOTHROW(
+      content_type::parse("application/json; charset=ascii; boundary=--paf--"));
   /// spurious ; at the end!
   CHECK_THAT("application/json; charset=ascii; boundary=--paf--;",
              !(Equals("application/json", "ascii", "--paf--")));

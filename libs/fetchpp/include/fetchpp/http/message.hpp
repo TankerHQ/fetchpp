@@ -15,6 +15,7 @@
 
 #include <fetchpp/alias/http.hpp>
 #include <fetchpp/alias/net.hpp>
+#include <fetchpp/alias/strings.hpp>
 
 #include <charconv>
 #include <optional>
@@ -53,7 +54,7 @@ public:
 
   bool has_content_type() const;
   std::optional<http::content_type> content_type() const;
-  void content_type(std::string_view ct);
+  void content_type(string_view ct);
   void set(http::content_type const& ctype);
 
   std::optional<std::size_t> content_length() const;
@@ -64,14 +65,14 @@ public:
   bool is_json() const;
   bool is_text() const;
   bool is_content() const;
-  bool is_content_type(std::string_view type) const;
+  bool is_content_type(string_view type) const;
 
   auto json() const -> nlohmann::json;
   auto text() const -> std::string;
   auto content() const -> beast::buffers_cat_view<
       typename base_t::body_type::value_type::const_buffers_type>;
 
-  void content(std::string_view value);
+  void content(string_view value);
   void content(net::const_buffer buffer);
 };
 
@@ -145,14 +146,13 @@ void message<isRequest, DynamicBuffer>::set(http::content_type const& ctype)
 }
 
 template <bool isRequest, typename DynamicBuffer>
-void message<isRequest, DynamicBuffer>::content_type(std::string_view ctype)
+void message<isRequest, DynamicBuffer>::content_type(string_view ctype)
 {
   this->set(http::field::content_type, ctype);
 }
 
 template <bool isRequest, typename DynamicBuffer>
-bool message<isRequest, DynamicBuffer>::is_content_type(
-    std::string_view type) const
+bool message<isRequest, DynamicBuffer>::is_content_type(string_view type) const
 {
   if (auto const ct = this->content_type())
     if (ct->type() == type)
@@ -200,10 +200,11 @@ auto message<isRequest, DynamicBuffer>::json() const -> nlohmann::json
 }
 
 template <bool isRequest, typename DynamicBuffer>
-void message<isRequest, DynamicBuffer>::content(std::string_view value)
+void message<isRequest, DynamicBuffer>::content(string_view value)
 {
   auto dest = this->body().prepare(value.size());
-  this->body().commit(net::buffer_copy(dest, net::buffer(value)));
+  this->body().commit(
+      net::buffer_copy(dest, net::buffer(value.data(), value.size())));
   this->insert(http::field::content_type, "text/plain");
   this->prepare_payload();
 }

@@ -23,6 +23,8 @@ namespace test::helpers
 namespace bb = boost::beast;
 namespace net = boost::asio;
 
+using string_view = bb::string_view;
+
 namespace detail
 {
 template <typename PeerSession>
@@ -151,8 +153,8 @@ public:
   }
 
   auto response(bb::http::status status,
-                std::string_view content_type,
-                std::string_view payload)
+                string_view content_type,
+                string_view payload)
   {
     auto res = response_type{status, 11, payload};
     res.set(bb::http::field::content_type, content_type);
@@ -223,8 +225,8 @@ public:
 
   template <typename CompletionToken>
   auto async_send(bb::http::status status,
-                  std::string_view content_type,
-                  std::string_view payload,
+                  string_view content_type,
+                  string_view payload,
                   CompletionToken&& token)
   {
     auto res = response_type(status, 11, payload);
@@ -248,7 +250,7 @@ public:
 
   template <typename CompletionToken>
   auto async_send(bb::http::status status,
-                  std::string_view payload,
+                  string_view payload,
                   CompletionToken&& token)
   {
     return this->async_send(

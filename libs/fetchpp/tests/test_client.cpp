@@ -17,8 +17,8 @@ using namespace std::chrono_literals;
 
 using namespace test::helpers;
 using namespace test::helpers::http_literals;
-using namespace std::string_view_literals;
 using namespace fetchpp::http::url_literals;
+using fetchpp::string_view;
 using test::helpers::HasErrorCode;
 
 namespace ssl = fetchpp::net::ssl;
