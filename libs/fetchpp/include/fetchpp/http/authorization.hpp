@@ -2,7 +2,8 @@
 
 #include <iosfwd>
 #include <string>
-#include <string_view>
+
+#include <fetchpp/alias/strings.hpp>
 
 #include <boost/variant2/variant.hpp>
 
@@ -14,7 +15,7 @@ class bearer
 
 public:
   bearer() = delete;
-  bearer(std::string_view token);
+  bearer(string_view token);
   std::string const& token() const noexcept;
 };
 std::string to_string(bearer const&);
@@ -26,7 +27,7 @@ class basic
 
 public:
   basic() = delete;
-  basic(std::string_view user, std::string_view password);
+  basic(string_view user, string_view password);
 
   std::string const& user() const noexcept;
   std::string const& password() const noexcept;

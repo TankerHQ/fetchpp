@@ -8,12 +8,11 @@ namespace test::helpers
 {
 namespace
 {
-using namespace std::literals::string_view_literals;
 
-auto constexpr DEFAULT_TEST_HOST = "httpbin.org"sv;
-auto constexpr DEFAULT_TEST_PROXY = "172.17.0.1:3128"sv;
+auto constexpr DEFAULT_TEST_HOST = string_view{"httpbin.org"};
+auto constexpr DEFAULT_TEST_PROXY = string_view{"172.17.0.1:3128"};
 
-inline auto get_safe_env(std::string_view key, std::string_view default_value)
+inline auto get_safe_env(string_view key, string_view default_value)
 {
   if (auto env = std::getenv(key.data()); env == nullptr)
     return std::string{default_value};
@@ -22,7 +21,7 @@ inline auto get_safe_env(std::string_view key, std::string_view default_value)
 }
 }
 
-std::string_view get_test_host()
+string_view get_test_host()
 {
   static auto const test_url =
       get_safe_env("FETCHPP_TEST_HOST", DEFAULT_TEST_HOST);
@@ -36,13 +35,22 @@ std::string get_test_proxy()
 }
 namespace http_literals
 {
+namespace
+{
+std::string do_format(char const* scheme, char const* target)
+{
+  auto str = get_test_host();
+  return fmt::format(
+      "{}://{}/{}", scheme, std::string_view{str.data(), str.size()}, target);
+}
+}
 std::string operator""_http(const char* target, std::size_t)
 {
-  return fmt::format("http://{}/{}", get_test_host(), target);
+  return do_format("http", target);
 }
 std::string operator""_https(const char* target, std::size_t)
 {
-  return fmt::format("https://{}/{}", get_test_host(), target);
+  return do_format("https", target);
 }
 
 }

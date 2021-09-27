@@ -7,12 +7,13 @@
 #include <boost/asio/buffer.hpp>
 
 #include <fetchpp/alias/net.hpp>
+#include <fetchpp/alias/strings.hpp>
 
 namespace fetchpp
 {
 template <typename CompletionToken>
 auto async_post(net::executor ex,
-                std::string const& url_str,
+                std::string_view url_str,
                 net::const_buffer body,
                 http::headers fields,
                 CompletionToken&& token)
@@ -27,7 +28,7 @@ auto async_post(net::executor ex,
 
 template <typename CompletionToken>
 auto async_post(net::executor ex,
-                std::string_view url_str,
+                string_view url_str,
                 net::const_buffer body,
                 CompletionToken&& token)
 {

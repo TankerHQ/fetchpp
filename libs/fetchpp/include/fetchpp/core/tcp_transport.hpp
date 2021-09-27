@@ -10,6 +10,7 @@
 #include <boost/beast/core/tcp_stream.hpp>
 
 #include <fetchpp/alias/beast.hpp>
+#include <fetchpp/alias/strings.hpp>
 #include <fetchpp/alias/tcp.hpp>
 
 namespace fetchpp
@@ -78,7 +79,7 @@ auto do_async_connect(
     basic_async_transport<
         beast::basic_stream<net::ip::tcp, Executor, RatePolicy>,
         DynamicBuffer>& ts,
-    std::string_view,
+    string_view,
     tcp::resolver::results_type resolved_results,
     CompletionToken&& token)
 {

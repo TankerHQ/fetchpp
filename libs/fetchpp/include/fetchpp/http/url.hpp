@@ -6,6 +6,8 @@
 #include <cstdint>
 #include <string>
 
+#include <fetchpp/alias/strings.hpp>
+
 namespace fetchpp::http
 {
 
@@ -22,12 +24,13 @@ public:
 bool is_ssl_involved(url const& uri);
 std::int16_t safe_port(url const& uri);
 
-nlohmann::json decode_query(std::string_view);
+nlohmann::json decode_query(string_view);
 std::string encode_query(nlohmann::json const&);
 
 namespace url_literals
 {
-inline auto operator "" _url(const char *str, std::size_t length) {
+inline auto operator"" _url(const char* str, std::size_t length)
+{
   return url(std::string_view(str, length));
 }
 }

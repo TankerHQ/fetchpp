@@ -7,6 +7,7 @@
 #include <boost/variant2/variant.hpp>
 
 #include <fetchpp/alias/http.hpp>
+#include <fetchpp/alias/strings.hpp>
 
 namespace fetchpp::http
 {
@@ -26,9 +27,9 @@ class proxy
 
 public:
   proxy() = default;
-  static proxy parse(std::string_view);
+  static proxy parse(string_view);
 
-  proxy(std::string_view url);
+  proxy(string_view url);
   http::url const& url() const;
   http::fields const& fields() const;
 };

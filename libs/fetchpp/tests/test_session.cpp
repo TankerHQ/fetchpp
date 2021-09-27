@@ -41,12 +41,13 @@ namespace bb = boost::beast;
 using AsyncStream = fetchpp::beast::ssl_stream<fetchpp::beast::tcp_stream>;
 using boost::asio::use_future;
 using URL = fetchpp::http::url;
+using string_view = fetchpp::string_view;
 
 namespace
 {
 auto tcp_endpoint_to_url(net::ip::tcp::endpoint const& endpoint,
-                         std::string_view path = "",
-                         std::string_view protocol = "http")
+                         string_view path = "",
+                         string_view protocol = "http")
 {
   return fmt::format("{}://{}:{}{}",
                      protocol,
