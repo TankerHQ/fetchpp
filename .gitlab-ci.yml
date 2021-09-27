@@ -1,7 +1,7 @@
 include:
   project: TankerHQ/gitlab-ci-files
   file: /native.yml
-  ref: 2021-08-26-1
+  ref: 2021-09-27-1
 
 .proxy:
   variables:
@@ -22,6 +22,18 @@ build/linux:
     - .rules/mr/auto
   script:
     - poetry run python run-ci.py --isolate-conan-user-home build-and-test --profile linux-release
+
+release:
+  rules:
+    - if: $SDK_IOS_RELEASE_VERSION !~ /\A\d+\.\d+\.\d+(-(alpha|beta)\d+)?\z/
+      when: never
+    - if: $CI_COMMIT_REF_NAME == "master"
+      when: manual
+  extends:
+    - .tags/linux
+    - .deploy
+  script:
+    - poetry run tbump --no-push $FETCHPP_RELEASE_VERSION
 
 build/macos/x86_64:
   extends:
