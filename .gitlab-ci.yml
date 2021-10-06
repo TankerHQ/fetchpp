@@ -1,7 +1,7 @@
 include:
   project: TankerHQ/gitlab-ci-files
   file: /native.yml
-  ref: 2021-09-27-1
+  ref: 2021-10-08-203
 
 .proxy:
   variables:
@@ -15,31 +15,29 @@ include:
     - .build
     - .proxy
 
+###############
+# build stage #
+###############
+
+.rules/build:
+  rules:
+    - !reference [.rules/mr/auto, rules]
+    - !reference [.rules/web/auto, rules]
+    - !reference [.rules/push-master-or-feat, rules]
+
 build/linux:
   extends:
     - .jobs
     - .tags/linux
-    - .rules/mr/auto
+    - .rules/build
   script:
     - poetry run python run-ci.py --isolate-conan-user-home build-and-test --profile linux-release
-
-release:
-  rules:
-    - if: $SDK_IOS_RELEASE_VERSION !~ /\A\d+\.\d+\.\d+(-(alpha|beta)\d+)?\z/
-      when: never
-    - if: $CI_COMMIT_REF_NAME == "master"
-      when: manual
-  extends:
-    - .tags/linux
-    - .deploy
-  script:
-    - poetry run tbump --no-push $FETCHPP_RELEASE_VERSION
 
 build/macos/x86_64:
   extends:
     - .jobs
     - .tags/macos/x86_64
-    - .rules/mr/auto
+    - .rules/build
   script:
     - poetry run python run-ci.py --isolate-conan-user-home build-and-test --profile macos-x86_64-release
 
@@ -47,7 +45,7 @@ build/macos/arm:
   extends:
     - .jobs
     - .tags/macos/arm
-    - .rules/mr/auto
+    - .rules/build
   script:
     - poetry run python run-ci.py --isolate-conan-user-home build-and-test --profile macos-armv8-release
 
@@ -55,7 +53,7 @@ build/windows:
   extends:
     - .jobs
     - .tags/windows
-    - .rules/mr/auto
+    - .rules/build
   script:
     - poetry run python run-ci.py --isolate-conan-user-home build-and-test --profile vs2019-release
 
@@ -66,6 +64,10 @@ build/asan/linux:
     - .rules/mr/manual
   script:
     - poetry run python run-ci.py --isolate-conan-user-home build-and-test --profile linux-asan-release-debinfo --build-missing
+
+#################
+# nightly stage #
+#################
 
 nightly/asan/linux:
   extends:
@@ -87,6 +89,16 @@ nightly/coverage:
     paths:
       - coverage/
     expire_in: 7 days
+
+release:
+  rules:
+    - if: $CI_COMMIT_REF_NAME == "master"
+      when: manual
+  extends:
+    - .tags/linux
+    - .deploy
+  script:
+    - poetry run tbump --no-push $FETCHPP_RELEASE_VERSION
 
 pages:
   extends:
