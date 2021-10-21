@@ -9,6 +9,10 @@ add_library(test_helpers
 )
 target_link_libraries(test_helpers CONAN_PKG::skyr-url CONAN_PKG::boost CONAN_PKG::libressl CONAN_PKG::fmt CONAN_PKG::nlohmann_json)
 
+add_library(test_main
+  main.cpp)
+target_link_libraries(test_main CONAN_PKG::catch2)
+
 add_library(fake_server
   helpers/fake_server.cpp
 )
@@ -18,45 +22,38 @@ add_executable(test_unitary
   test_request.cpp
   test_url.cpp
   test_proxy_match.cpp
-  main.cpp
 )
-target_link_libraries(test_unitary test_helpers fetchpp CONAN_PKG::catch2 CONAN_PKG::fmt CONAN_PKG::nlohmann_json)
+target_link_libraries(test_unitary test_main test_helpers fetchpp CONAN_PKG::fmt CONAN_PKG::nlohmann_json)
 
 add_executable(test_functional
   tests.cpp
-  main.cpp
 )
-target_link_libraries(test_functional test_helpers fetchpp CONAN_PKG::catch2 CONAN_PKG::fmt CONAN_PKG::nlohmann_json)
+target_link_libraries(test_functional test_main test_helpers fetchpp CONAN_PKG::fmt CONAN_PKG::nlohmann_json)
 
 add_executable(test_transport
   test_transport.cpp
-  main.cpp
 )
-target_link_libraries(test_transport test_helpers fetchpp CONAN_PKG::catch2 CONAN_PKG::fmt CONAN_PKG::nlohmann_json)
+target_link_libraries(test_transport test_main test_helpers fetchpp CONAN_PKG::fmt CONAN_PKG::nlohmann_json)
 
 add_executable(test_proxy_transport
   test_tunnel_transport.cpp
-  main.cpp
 )
-target_link_libraries(test_proxy_transport test_helpers fetchpp CONAN_PKG::catch2 CONAN_PKG::fmt CONAN_PKG::nlohmann_json)
+target_link_libraries(test_proxy_transport test_main test_helpers fetchpp CONAN_PKG::fmt CONAN_PKG::nlohmann_json)
 
 add_executable(test_session
   test_session.cpp
-  main.cpp
 )
-target_link_libraries(test_session test_helpers fetchpp CONAN_PKG::catch2 CONAN_PKG::fmt CONAN_PKG::nlohmann_json)
+target_link_libraries(test_session test_main test_helpers fetchpp CONAN_PKG::fmt CONAN_PKG::nlohmann_json)
 
 add_executable(test_client
   test_client.cpp
-  main.cpp
 )
-target_link_libraries(test_client test_helpers fetchpp CONAN_PKG::catch2 CONAN_PKG::fmt CONAN_PKG::nlohmann_json)
+target_link_libraries(test_client test_main test_helpers fetchpp CONAN_PKG::fmt CONAN_PKG::nlohmann_json)
 
 add_executable(test_process
   test_process_one.cpp
-  main.cpp
 )
-target_link_libraries(test_process test_helpers fetchpp CONAN_PKG::catch2 CONAN_PKG::fmt CONAN_PKG::nlohmann_json)
+target_link_libraries(test_process test_main test_helpers fetchpp CONAN_PKG::fmt CONAN_PKG::nlohmann_json)
 
 add_test(NAME test_unitary COMMAND test_unitary)
 add_test(NAME test_transport COMMAND test_transport)
