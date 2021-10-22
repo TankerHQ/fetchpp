@@ -60,8 +60,10 @@ build/windows:
 build/asan/linux:
   extends:
     - .jobs
-    - .tags/linux
     - .rules/mr/manual
+  tags:
+    # asan use a lot of memory, some slaves only have 16GB of memory
+    - LinuxSlave-2
   script:
     - poetry run python run-ci.py --isolate-conan-user-home build-and-test --profile linux-asan-release-debinfo --build-missing
 
