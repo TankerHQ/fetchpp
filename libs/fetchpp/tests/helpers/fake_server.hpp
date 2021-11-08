@@ -68,9 +68,7 @@ struct acceptor_ssl_op : acceptor_base_op
       self.complete(ec, {});
       return;
     }
-    self.complete(
-        ec,
-        std::move(peer_session<AsyncStream>(std::move(*stream_.release()))));
+    self.complete(ec, peer_session<AsyncStream>(std::move(*stream_)));
   }
 };
 }
