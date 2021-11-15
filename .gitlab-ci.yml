@@ -57,20 +57,6 @@ build/windows:
   script:
     - poetry run python run-ci.py --isolate-conan-user-home build-and-test --profile vs2019-release
 
-
-nightly/coverage:
-  extends:
-    - .jobs
-    - .tags/linux
-    - .rules/nightly
-  script:
-    - poetry run python run-ci.py --isolate-conan-user-home build-and-test --profile linux-release --coverage
-    - mv build/linux-release/coverage coverage
-  artifacts:
-    paths:
-      - coverage/
-    expire_in: 7 days
-
 release:
   rules:
     - if: $CI_COMMIT_REF_NAME == "master"
@@ -80,7 +66,7 @@ release:
     - .deploy
   script:
     - poetry run tbump --no-push $FETCHPP_RELEASE_VERSION
-
+      
 #################
 # nightly stage #
 #################
