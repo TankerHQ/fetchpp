@@ -4,7 +4,7 @@ namespace fetchpp::detail
 {
 task::~task() = default;
 
-session_base::session_base(net::executor default_ex)
+session_base::session_base(net::any_io_executor default_ex)
   : strand_(default_ex), timer_(strand_)
 {
 }

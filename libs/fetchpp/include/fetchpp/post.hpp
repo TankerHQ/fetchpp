@@ -12,7 +12,7 @@
 namespace fetchpp
 {
 template <typename CompletionToken>
-auto async_post(net::executor ex,
+auto async_post(net::any_io_executor ex,
                 std::string_view url_str,
                 net::const_buffer body,
                 http::headers fields,
@@ -27,7 +27,7 @@ auto async_post(net::executor ex,
 }
 
 template <typename CompletionToken>
-auto async_post(net::executor ex,
+auto async_post(net::any_io_executor ex,
                 string_view url_str,
                 net::const_buffer body,
                 CompletionToken&& token)

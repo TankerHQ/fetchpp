@@ -18,14 +18,14 @@ namespace fetchpp
 template <typename Response = http::response,
           typename Request,
           typename CompletionToken>
-auto async_fetch(net::executor ex,
+auto async_fetch(net::any_io_executor ex,
                  net::ssl::context& sslc,
                  Request request,
                  CompletionToken&& token)
 {
   auto endpoint = detail::to_endpoint<true>(request.uri());
   auto launch = [](auto&& handler,
-                   net::executor ex,
+                   net::any_io_executor ex,
                    auto endpoint,
                    net::ssl::context& sslc,
                    Request request) {
@@ -48,7 +48,7 @@ auto async_fetch(net::executor ex,
 template <typename Response = http::response,
           typename Request,
           typename CompletionToken>
-auto async_fetch(net::executor ex, Request request, CompletionToken&& token)
+auto async_fetch(net::any_io_executor ex, Request request, CompletionToken&& token)
 {
   if (http::is_ssl_involved(request.uri()))
   {

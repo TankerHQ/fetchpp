@@ -332,7 +332,7 @@ public:
   using endpoint_type = Endpoint;
 
   template <typename... Args>
-  session(endpoint_type endpoint, net::executor ex, Args&&... args)
+  session(endpoint_type endpoint, net::any_io_executor ex, Args&&... args)
     : session_base{ex},
       endpoint_(std::move(endpoint)),
       transport_(ex, std::forward<Args>(args)...)
@@ -413,14 +413,14 @@ private:
 };
 
 template <typename... Args>
-session(secure_endpoint, net::executor ex, std::chrono::nanoseconds, Args&&...)
+session(secure_endpoint, net::any_io_executor ex, std::chrono::nanoseconds, Args&&...)
     -> session<secure_endpoint, ssl_async_transport>;
 
 template <typename... Args>
-session(plain_endpoint, net::executor ex, std::chrono::nanoseconds, Args&&...)
+session(plain_endpoint, net::any_io_executor ex, std::chrono::nanoseconds, Args&&...)
     -> session<plain_endpoint, tcp_async_transport>;
 
 template <typename... Args>
-session(tunnel_endpoint, net::executor ex, std::chrono::nanoseconds, Args&&...)
+session(tunnel_endpoint, net::any_io_executor ex, std::chrono::nanoseconds, Args&&...)
     -> session<tunnel_endpoint, tunnel_async_transport>;
 }

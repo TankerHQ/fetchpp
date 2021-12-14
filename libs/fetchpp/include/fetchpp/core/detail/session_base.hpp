@@ -26,9 +26,9 @@ struct session_base
 
   session_base(session_base&&) = delete;
   session_base& operator=(session_base&&) = delete;
-  session_base(net::executor default_ex);
+  session_base(net::any_io_executor default_ex);
 
-  using internal_executor_type = net::strand<net::executor>;
+  using internal_executor_type = net::strand<net::any_io_executor>;
   using default_executor_type =
       typename internal_executor_type::inner_executor_type;
 

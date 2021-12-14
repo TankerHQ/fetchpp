@@ -5,7 +5,7 @@ namespace fetchpp
 namespace detail
 {
 }
-client::client(net::executor ex, std::chrono::nanoseconds timeout)
+client::client(net::any_io_executor ex, std::chrono::nanoseconds timeout)
   : client(ex, timeout, net::ssl::context(net::ssl::context::tlsv12_client))
 {
 }
@@ -15,7 +15,7 @@ client::client(net::io_context& ioc, std::chrono::nanoseconds timeout)
 {
 }
 
-client::client(net::executor ex,
+client::client(net::any_io_executor ex,
                std::chrono::nanoseconds timeout,
                net::ssl::context context)
   : strand_(ex), timeout_(timeout), context_(std::move(context))
