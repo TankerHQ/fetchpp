@@ -15,7 +15,7 @@ namespace test::helpers
 namespace net = boost::asio;
 namespace bb = boost::beast;
 
-net::ip::tcp::resolver::results_type http_resolve_domain(net::executor ex,
+net::ip::tcp::resolver::results_type http_resolve_domain(net::any_io_executor ex,
                                                          skyr::url const& url);
 
 template <typename Stream>

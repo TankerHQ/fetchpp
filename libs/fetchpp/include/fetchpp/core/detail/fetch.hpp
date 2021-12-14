@@ -91,9 +91,9 @@ template <typename State>
 simple_fetch_op(std::unique_ptr<State>) -> simple_fetch_op<State>;
 
 template <typename Response, typename Request, typename CompletionToken>
-auto async_fetch(net::executor ex, Request&& request, CompletionToken&& token)
+auto async_fetch(net::any_io_executor ex, Request&& request, CompletionToken&& token)
 {
-  auto launch = [](auto&& handler, net::executor ex, Request request) {
+  auto launch = [](auto&& handler, net::any_io_executor ex, Request request) {
     auto s = make_state<base_state, Response>(
         detail::to_endpoint<false>(request.uri()),
         tcp_async_transport(ex, std::chrono::seconds(30)),

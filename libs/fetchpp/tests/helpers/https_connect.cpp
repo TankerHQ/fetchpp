@@ -22,7 +22,7 @@ std::int16_t safe_port(skyr::url const& uri)
 }
 }
 
-net::ip::tcp::resolver::results_type http_resolve_domain(net::executor ex,
+net::ip::tcp::resolver::results_type http_resolve_domain(net::any_io_executor ex,
                                                          skyr::url const& url)
 {
   net::ip::tcp::resolver resolver(ex);

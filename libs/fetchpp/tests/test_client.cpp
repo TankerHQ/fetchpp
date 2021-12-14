@@ -32,11 +32,6 @@ static std::ostream& operator<<(std::ostream& os, GracefulShutdown const& g)
   return os;
 }
 }
-static_assert(
-    fetchpp::net::is_executor<fetchpp::client::default_executor_type>::value);
-static_assert(
-    fetchpp::net::is_executor<fetchpp::client::internal_executor_type>::value);
-
 TEST_CASE_METHOD(ioc_fixture, "client push one request", "[client][http]")
 {
   fetchpp::client cl{ioc};

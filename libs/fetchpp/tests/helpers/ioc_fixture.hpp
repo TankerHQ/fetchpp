@@ -13,9 +13,9 @@ namespace net = boost::asio;
 struct ioc_fixture
 {
   net::io_context ioc;
-  net::executor ex;
+  net::any_io_executor ex;
 
-  using work_guard = net::executor_work_guard<net::executor>;
+  using work_guard = net::executor_work_guard<net::any_io_executor>;
 
   ioc_fixture()
     : ex(ioc.get_executor()),

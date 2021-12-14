@@ -91,7 +91,7 @@ public:
   template <typename... Args>
   basic_async_transport(DynamicBuffer buffer,
                         std::chrono::nanoseconds timeout,
-                        net::executor ex,
+                        net::any_io_executor ex,
                         Args&&... args)
     : stream_creator_([ex,
                        params = std::tuple<Args...>(
@@ -110,7 +110,7 @@ public:
   }
 
   template <typename... Args>
-  basic_async_transport(net::executor ex,
+  basic_async_transport(net::any_io_executor ex,
                         std::chrono::nanoseconds timeout,
                         Args&&... args)
     : basic_async_transport(

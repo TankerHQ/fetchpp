@@ -26,11 +26,11 @@ class client
   friend struct detail::client_stop_sessions_op;
 
 public:
-  explicit client(net::executor ex,
+  explicit client(net::any_io_executor ex,
                   std::chrono::nanoseconds = std::chrono::seconds(30));
   explicit client(net::io_context& ioc,
                   std::chrono::nanoseconds = std::chrono::seconds(30));
-  client(net::executor ex, std::chrono::nanoseconds, net::ssl::context context);
+  client(net::any_io_executor ex, std::chrono::nanoseconds, net::ssl::context context);
   client(net::io_context& ioc,
          std::chrono::nanoseconds,
          net::ssl::context context);
@@ -42,7 +42,7 @@ public:
       boost::variant2::variant<plain_session, secure_session, tunnel_session>;
   using sessions = std::deque<session_adapter>;
 
-  using internal_executor_type = net::strand<net::executor>;
+  using internal_executor_type = net::strand<net::any_io_executor>;
   using default_executor_type =
       typename internal_executor_type::inner_executor_type;
 

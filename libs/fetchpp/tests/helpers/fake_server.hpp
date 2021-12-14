@@ -17,7 +17,7 @@ namespace detail
 {
 struct acceptor_base_op
 {
-  using acceptor_type = net::basic_socket_acceptor<net::ip::tcp, net::executor>;
+  using acceptor_type = net::basic_socket_acceptor<net::ip::tcp, net::any_io_executor>;
   acceptor_type& acceptor_;
 
   template <typename Self>
@@ -75,7 +75,7 @@ struct acceptor_ssl_op : acceptor_base_op
 
 class fake_server
 {
-  using executor_type = net::executor;
+  using executor_type = net::any_io_executor;
   using acceptor_type = net::basic_socket_acceptor<net::ip::tcp, executor_type>;
 
 private:

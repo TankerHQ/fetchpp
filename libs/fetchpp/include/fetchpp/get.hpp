@@ -12,7 +12,7 @@
 namespace fetchpp
 {
 template <typename CompletionToken>
-auto async_get(net::executor ex,
+auto async_get(net::any_io_executor ex,
                string_view url_str,
                http::headers fields,
                CompletionToken&& token)
@@ -27,7 +27,7 @@ auto async_get(net::executor ex,
 }
 
 template <typename CompletionToken>
-auto async_get(net::executor ex, string_view url_str, CompletionToken&& token)
+auto async_get(net::any_io_executor ex, string_view url_str, CompletionToken&& token)
 {
   return async_get(ex, url_str, {}, std::forward<CompletionToken>(token));
 }

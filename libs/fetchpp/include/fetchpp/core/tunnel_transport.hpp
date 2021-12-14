@@ -133,7 +133,7 @@ public:
   using next_layer_creator_sig = next_layer_type();
   using next_layer_creator = std::function<next_layer_creator_sig>;
 
-  tunnel_async_transport(net::executor ex,
+  tunnel_async_transport(net::any_io_executor ex,
                          std::chrono::nanoseconds timeout,
                          net::ssl::context& ctx)
     : stream_creator_([ex, &ctx]() { return next_layer_type(ex, ctx); }),
