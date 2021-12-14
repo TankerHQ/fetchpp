@@ -70,7 +70,12 @@ target_include_directories(fetchpp
 )
 target_compile_definitions(fetchpp PUBLIC BOOST_BEAST_SEPARATE_COMPILATION)
 
-target_link_libraries(fetchpp PUBLIC CONAN_PKG::boost CONAN_PKG::skyr-url CONAN_PKG::nlohmann_json CONAN_PKG::libressl)
+find_package(Boost REQUIRED)
+find_package(nlohmann_json REQUIRED)
+find_package(libressl REQUIRED)
+find_package(skyr-url REQUIRED)
+
+target_link_libraries(fetchpp PUBLIC Boost::Boost skyr-url::skyr-url nlohmann_json::nlohmann_json libressl::libressl)
 
 install(DIRECTORY include DESTINATION .)
 
