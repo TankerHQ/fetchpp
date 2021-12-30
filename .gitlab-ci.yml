@@ -65,7 +65,7 @@ release:
     - .tags/linux
     - .deploy
   script:
-    - poetry run tbump --no-push $FETCHPP_RELEASE_VERSION
+    - poetry run tbump --no-push --non-interactive $FETCHPP_RELEASE_VERSION
       
 #################
 # nightly stage #
