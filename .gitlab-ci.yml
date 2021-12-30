@@ -1,7 +1,12 @@
 include:
   project: TankerHQ/gitlab-ci-files
   file: /native.yml
-  ref: 2021-10-08-203
+  ref: 2022-01-04-239
+
+stages:
+  - build
+  - pre-release
+  - release
 
 .proxy:
   variables:
@@ -10,6 +15,7 @@ include:
   services:
     - name: registry.gitlab.com/tankerhq/ci/tinyproxy:latest
       alias: tinyproxy
+
 .jobs:
   extends:
     - .build
@@ -24,48 +30,62 @@ include:
     - !reference [.rules/mr/auto, rules]
     - !reference [.rules/web/auto, rules]
     - !reference [.rules/push-master-or-feat, rules]
+    - !reference [.rules/release/branch, rules]
 
 build/linux:
   extends:
     - .jobs
-    - .tags/linux
     - .rules/build
   script:
     - poetry run python run-ci.py --isolate-conan-user-home build-and-test --profile linux-release
+  tags: !reference [.tags/compilation-linux, tags]
 
 build/macos/x86_64:
   extends:
     - .jobs
-    - .tags/macos/x86_64
     - .rules/build
   script:
     - poetry run python run-ci.py --isolate-conan-user-home build-and-test --profile macos-x86_64-release
+  tags: !reference [.tags/macos/x86_64, tags]
 
 build/macos/arm:
   extends:
     - .jobs
-    - .tags/macos/arm
     - .rules/build
   script:
     - poetry run python run-ci.py --isolate-conan-user-home build-and-test --profile macos-armv8-release
+  tags: !reference [.tags/macos/arm, tags]
 
 build/windows:
   extends:
     - .jobs
-    - .tags/windows
     - .rules/build
   script:
     - poetry run python run-ci.py --isolate-conan-user-home build-and-test --profile vs2019-release
+  tags: !reference [.tags/compilation-windows, tags]
 
-release:
+release/prepare:
+  stage: pre-release
   rules:
-    - if: $CI_COMMIT_REF_NAME == "master"
+    - if: $CI_COMMIT_REF_NAME =~ /\Arelease\/.+\z/
       when: manual
-  extends:
-    - .tags/linux
-    - .deploy
   script:
-    - poetry run tbump --no-push --non-interactive $FETCHPP_RELEASE_VERSION
+    - poetry run python run-ci.py --isolate-conan-user-home prepare-release
+  artifacts:
+    reports:
+      dotenv: variables.env
+
+release/deploy:
+  stage: release
+  extends:
+    - .rules/release/branch
+  needs:
+    - job: release/prepare
+  script:
+    - echo releasing fetchpp v$FETCHPP_RELEASE_VERSION
+  release:
+    description: fetchpp v$FETCHPP_RELEASE_VERSION
+    tag_name: v$FETCHPP_RELEASE_VERSION
       
 #################
 # nightly stage #
