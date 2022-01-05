@@ -56,14 +56,32 @@ auto tcp_endpoint_to_url(net::ip::tcp::endpoint const& endpoint,
                      path);
 }
 }
+
+CATCH_REGISTER_ENUM(fetchpp::GracefulShutdown,
+                    fetchpp::GracefulShutdown::Yes,
+                    fetchpp::GracefulShutdown::No)
+
 namespace fetchpp
 {
-static std::ostream& operator<<(std::ostream& os, GracefulShutdown const& g)
+static std::ostream& operator<<(std::ostream& os,
+                                fetchpp::GracefulShutdown const& g)
 {
   os << ((g == fetchpp::GracefulShutdown::Yes) ? "Yes" : "No");
   return os;
 }
 }
+
+template <>
+struct Catch::StringMaker<fetchpp::beast::error_code>
+{
+  static std::string convert(fetchpp::beast::error_code const& ec)
+  {
+    return fmt::format("error code: {2}:{0}, \"{1}\"",
+                       ec.value(),
+                       ec.message(),
+                       ec.category().name());
+  }
+};
 
 TEST_CASE_METHOD(worker_fixture,
                  "session executes multiples request",
@@ -103,38 +121,38 @@ TEST_CASE_METHOD(worker_fixture,
                                         fetchpp::http::url("get"_http));
   {
     auto resp = fetchpp::http::response{};
-    session.push_request(
-        request,
-        resp,
-        [session_worker_id = worker(2).worker.get_id()](auto ec) {
-          REQUIRE(!ec);
-          REQUIRE(session_worker_id == std::this_thread::get_id());
-        });
+    std::promise<std::thread::id> isdone;
+    auto waitforit = isdone.get_future();
+    session.push_request(request, resp, [&](bb::error_code ec) {
+      if (ec)
+        return isdone.set_exception(
+            std::make_exception_ptr(boost::system::system_error(ec)));
+      isdone.set_value(std::this_thread::get_id());
+    });
     auto fake_session = server.async_accept(net::use_future).get();
     REQUIRE_NOTHROW(
         fake_session.async_reply_back(bb::http::status::ok, net::use_future)
             .get());
+    REQUIRE(waitforit.get() == worker(2).worker.get_id());
   }
   {
     auto resp = fetchpp::http::response{};
-    std::promise<void> isdone;
+    std::promise<std::thread::id> isdone;
     auto waitforit = isdone.get_future();
-    auto bound_worker_id = worker(0).worker.get_id();
     session.push_request(
-        request,
-        resp,
-        net::bind_executor(worker(0).ex, [&](fetchpp::error_code ec) {
-          REQUIRE(!ec);
-          REQUIRE(bound_worker_id == std::this_thread::get_id());
-          isdone.set_value();
+        request, resp, net::bind_executor(worker(0).ex, [&](bb::error_code ec) {
+          if (ec)
+            return isdone.set_exception(
+                std::make_exception_ptr(boost::system::system_error(ec)));
+          isdone.set_value(std::this_thread::get_id());
         }));
     auto fake_session = server.async_accept(net::use_future).get();
     REQUIRE_NOTHROW(
         fake_session.async_reply_back(bb::http::status::ok, net::use_future)
             .get());
-    REQUIRE_NOTHROW(waitforit.get());
-    REQUIRE_NOTHROW(session.async_stop(net::use_future).get());
+    REQUIRE(waitforit.get() == worker(0).worker.get_id());
   }
+  REQUIRE_NOTHROW(session.async_stop(net::use_future).get());
 }
 
 TEST_CASE_METHOD(worker_fixture,
