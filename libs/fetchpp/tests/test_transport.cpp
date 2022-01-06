@@ -20,6 +20,7 @@
 #include "helpers/https_connect.hpp"
 #include "helpers/worker_fixture.hpp"
 
+#include <fmt/chrono.h>
 #include <fmt/format.h>
 
 #include <chrono>
@@ -47,19 +48,35 @@ auto tcp_endpoint_to_url(net::ip::tcp::endpoint const& endpoint)
   return url;
 }
 }
+
+namespace Catch
+{
+template <typename Rep, typename Period>
+struct StringMaker<std::chrono::duration<Rep, Period>>
+{
+  static std::string convert(std::chrono::duration<Rep, Period> const& t)
+  {
+    return fmt::format("{}", t);
+  }
+};
+}
+
 TEST_CASE_METHOD(ioc_fixture, "connect timeouts", "[transport][http][timeout]")
 {
-  fetchpp::tcp_async_transport ts(ioc.get_executor(), 500ms);
+  auto const transport_timout = GENERATE(100ms, 300ms);
+  fetchpp::tcp_async_transport ts(ioc.get_executor(), transport_timout);
   // this is a non routable ip
   auto endpoint = fetchpp::plain_endpoint("10.255.255.1", 8080);
   auto const now = std::chrono::high_resolution_clock::now();
-  REQUIRE_THROWS_MATCHES(
+  CHECK_THROWS_MATCHES(
       ts.async_connect(endpoint, boost::asio::use_future).get(),
       boost::system::system_error,
       HasErrorCode(boost::beast::error::timeout));
   auto const end = std::chrono::high_resolution_clock::now();
-  REQUIRE((650ms) > (end - now));
-  REQUIRE_NOTHROW(ts.async_close(boost::asio::use_future).get());
+  auto duration =
+      std::chrono::duration_cast<std::chrono::milliseconds>(end - now);
+  CHECK_NOFAIL(duration <= (transport_timout + transport_timout / 2));
+  CHECK_NOTHROW(ts.async_close(boost::asio::use_future).get());
 }
 
 TEST_CASE_METHOD(ioc_fixture, "transport one ssl", "[transport][https]")
