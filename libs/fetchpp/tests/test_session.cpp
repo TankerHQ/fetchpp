@@ -220,14 +220,17 @@ TEST_CASE_METHOD(worker_fixture,
     REQUIRE(response.result_int() == 200);
     results.pop_front();
   }
-  for (auto& [fut, response] : results)
+  for (auto i = 0u; i < results.size(); ++i)
   {
+    INFO(fmt::format("processing results {}/{}", i + 1, results.size()));
+    auto& [fut, response] = results[i];
     REQUIRE_NOTHROW(
         fake_session.async_reply_back(bb::http::status::ok, net::use_future)
             .get());
     REQUIRE_NOTHROW(fut.get());
     REQUIRE(response.result_int() == 200);
   }
+  REQUIRE_NOTHROW(session.async_stop(net::use_future).get());
 }
 
 TEST_CASE_METHOD(worker_fixture,
