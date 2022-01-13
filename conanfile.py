@@ -36,7 +36,7 @@ class FetchppConan(ConanFile):
         self.requires("skyr-url/1.13.0-r4")
 
     def build_requirements(self):
-        self.build_requires("catch2/2.13.6")
+        self.build_requires("catch2/2.13.6-r1")
         self.build_requires("fmt/7.1.3")
 
     def init_cmake(self):
