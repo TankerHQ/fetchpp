@@ -21,7 +21,7 @@ class FetchppConan(ConanFile):
         "warn_as_error": False,
         "coverage": False,
     }
-    generators = "cmake_find_package"
+    generators = "cmake"
     exports_sources = "CMakeLists.txt", "libs/*"
     cmake = None
 
