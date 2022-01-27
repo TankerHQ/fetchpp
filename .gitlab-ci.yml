@@ -98,8 +98,8 @@ build/asan/linux:
     - !reference [.rules/mr/manual, rules]
     - !reference [.rules/nightly, rules]
   tags:
-    # asan use a lot of memory, some slaves only have 16GB of memory
-    - LinuxSlave-2
+    # asan use a lot of memory, some runners only have 16GB of memory
+    - GCE-Runner-008
   script:
     - poetry run python run-ci.py --isolate-conan-user-home build-and-test --profile linux-asan-release-debinfo --build-missing
 
