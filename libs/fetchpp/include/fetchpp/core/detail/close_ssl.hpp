@@ -41,7 +41,6 @@ struct async_ssl_close_op
         ec = {};
       else if (ec == net::error::operation_aborted)
         ec = {};
-      assert(!ec);
       beast::close_socket(beast::get_lowest_layer(stream_));
       self.complete(ec);
     }
