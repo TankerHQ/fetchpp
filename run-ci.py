@@ -1,24 +1,25 @@
-import sys
 import argparse
 import re
+import sys
+from pathlib import Path
 
+import cli_ui as ui
 import tankerci
 import tankerci.conan
 import tankerci.cpp
-import cli_ui as ui
-
-from pathlib import Path
 
 
-def build_and_test(profile: str,
-                   coverage: bool, build_missing: bool) -> None:
+def build_and_test(profile: str, coverage: bool, build_missing: bool) -> None:
     build = ["never"]
 
     if build_missing:
         build = ["missing"]
 
     built_path = tankerci.cpp.build(
-        profile, make_package=True, build=build, coverage=coverage,
+        profile,
+        make_package=True,
+        build=build,
+        coverage=coverage,
     )
     tankerci.cpp.check(built_path, coverage=coverage)
 
@@ -28,7 +29,7 @@ def prepare_release():
     version = infos["version"]
     if re.match(r"\d+.\d+\d+(-(alpha|beta)\d+)?", version) is None:
         ui.fatal("Bad version format")
-    with open('variables.env', 'w') as f:
+    with open("variables.env", "w") as f:
         f.write(f"FETCHPP_RELEASE_VERSION={infos['version']}")
 
 
